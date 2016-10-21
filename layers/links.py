@@ -1,5 +1,7 @@
 import numpy
 import layer
+from chainer import links as L
+import weightnorm as WN
 
 class Bias(layer.layer):
 	def __init__(self, axis=1, shape=None):
@@ -12,6 +14,7 @@ class Bilinear(layer.layer):
 		self.right_size = right_size
 		self.out_size = out_size
 		self.nobias = nobias
+		self._link = L.Bilinear
 
 class Convolution2D(layer.layer):
 	def __init__(self, in_channels, out_channels, ksize, stride=1, pad=0, wscale=1, bias=0, nobias=False, use_cudnn=True):
@@ -24,6 +27,7 @@ class Convolution2D(layer.layer):
 		self.bias = bias
 		self.nobias = nobias
 		self.use_cudnn = use_cudnn
+		self._link = L.Convolution2D
 
 class WeightnormConvolution2D(Convolution2D):
 	pass
