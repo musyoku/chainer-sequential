@@ -22,12 +22,12 @@ YOUR PROJECT DIR
 
 before:
 ```
-from chainer import links as L
-layer = L.Linear(...)
+import chainer
+layer = chainer.links.Linear(...)
 ```
 
 after:
 ```
-import weightnorm as WN
-layer = WN.Linear(...)
+import weightnorm
+layer = weightnorm.Linear(...)
 ```
