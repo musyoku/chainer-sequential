@@ -1,13 +1,14 @@
 import numpy
 import chainer
 import links
+import util
 
 class Link(object):
 	
 	def __call__(self, x):
 		raise NotImplementedError()
 
-	def has_multiple_weight(self):
+	def has_multiple_weights(self):
 		return False
 
 	def from_dict(self, dict):
@@ -38,14 +39,13 @@ class Link(object):
 			print "	{}: {}".format(attr, value)
 
 class Convolution2D(Link):
-	def __init__(self, in_channels, out_channels, ksize, stride=1, pad=0, wscale=1, bias=0, nobias=False, use_cudnn=True, use_weightnorm=False):
+	def __init__(self, in_channels, out_channels, ksize, stride=1, pad=0, bias=0, nobias=False, use_cudnn=True, use_weightnorm=False):
 		self._link = "Convolution2D"
 		self.in_channels = in_channels
 		self.out_channels = out_channels
 		self.ksize = ksize
 		self.stride = stride
 		self.pad = pad
-		self.wscale = wscale
 		self.bias = bias
 		self.nobias = nobias
 		self.use_cudnn = use_cudnn
@@ -64,14 +64,13 @@ class Convolution2D(Link):
 		return chainer.links.Convolution2D(**args)
 
 class Deconvolution2D(Link):
-	def __init__(self, in_channels, out_channels, ksize, stride=1, pad=0, wscale=1, bias=0, nobias=False, outsize=None, use_cudnn=True, use_weightnorm=False):
+	def __init__(self, in_channels, out_channels, ksize, stride=1, pad=0, bias=0, nobias=False, outsize=None, use_cudnn=True, use_weightnorm=False):
 		self._link = "Deconvolution2D"
 		self.in_channels = in_channels
 		self.out_channels = out_channels
 		self.ksize = ksize
 		self.stride = stride
 		self.pad = pad
-		self.wscale = wscale
 		self.bias = bias
 		self.nobias = nobias
 		self.outsize = outsize
@@ -90,7 +89,7 @@ class Deconvolution2D(Link):
 		return chainer.links.Deconvolution2D(**args)
 
 class DilatedConvolution2D(Link):
-	def __init__(self, in_channels, out_channels, ksize, stride=1, pad=0, dilate=1, wscale=1, bias=0, nobias=False, use_cudnn=True):
+	def __init__(self, in_channels, out_channels, ksize, stride=1, pad=0, dilate=1, bias=0, nobias=False, use_cudnn=True):
 		self._link = "DilatedConvolution2D"
 		self.in_channels = in_channels
 		self.out_channels = out_channels
@@ -98,7 +97,6 @@ class DilatedConvolution2D(Link):
 		self.stride = stride
 		self.pad = pad
 		self.dilate = dilate
-		self.wscale = wscale
 		self.bias = bias
 		self.nobias = nobias
 		self.use_cudnn = use_cudnn
@@ -136,15 +134,14 @@ class GRU(Link):
 			args["inner_init"] = self._inner_init
 		return chainer.links.GRU(**args)
 
-	def has_multiple_weight(self):
+	def has_multiple_weights(self):
 		return True
 
 class Linear(Link):
-	def __init__(self, in_size, out_size, wscale=1, bias=0, nobias=False, use_weightnorm=False):
+	def __init__(self, in_size, out_size, bias=0, nobias=False, use_weightnorm=False):
 		self._link = "Linear"
 		self.in_size = in_size
 		self.out_size = out_size
-		self.wscale = wscale
 		self.bias = bias
 		self.nobias = nobias
 		self.use_weightnorm = use_weightnorm
@@ -178,7 +175,7 @@ class LSTM(Link):
 			args["forget_bias_init"] = self._forget_bias_init
 		return chainer.links.GRU(**args)
 
-	def has_multiple_weight(self):
+	def has_multiple_weights(self):
 		return True
 
 class StatelessLSTM(Link):
@@ -195,7 +192,7 @@ class StatelessLSTM(Link):
 			args["upward_init"] = self._upward_init
 		return chainer.links.GRU(**args)
 
-	def has_multiple_weight(self):
+	def has_multiple_weights(self):
 		return True
 
 class StatefulGRU(Link):
@@ -213,7 +210,7 @@ class StatefulGRU(Link):
 			args["inner_init"] = self._inner_init
 		return chainer.links.GRU(**args)
 
-	def has_multiple_weight(self):
+	def has_multiple_weights(self):
 		return True
 
 class StatefulPeepholeLSTM(Link):

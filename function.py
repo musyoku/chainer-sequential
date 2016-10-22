@@ -30,8 +30,6 @@ class Activation(object):
 			return hard_sigmoid()
 		if self.nonlinearity.lower() == "leaky_relu":
 			return leaky_relu()
-		if self.nonlinearity.lower() == "maxout":
-			return maxout()
 		if self.nonlinearity.lower() == "relu":
 			return relu()
 		if self.nonlinearity.lower() == "sigmoid":
@@ -225,3 +223,19 @@ class unpooling_2d(Function):
 
 	def __call__(self, x):
 		return F.unpooling_2d(x, self.ksize, self.stride, self.pad, self.outsize, self.cover_all)
+
+class reshape(Function):
+	def __init__(self, shape):
+		self._function = "reshape"
+		self.shape = shape
+
+	def __call__(self, x):
+		return F.reshape(x, self.shape)
+
+class reshape_1d(Function):
+	def __init__(self):
+		self._function = "reshape_1d"
+
+	def __call__(self, x):
+		batchsize = x.data.shape[0]
+		return F.reshape(x, (batchsize, -1))

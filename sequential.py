@@ -1,5 +1,4 @@
-import copy
-import json
+import copy, json, types
 import chainer
 import link
 import function
@@ -12,6 +11,8 @@ class Chain(chainer.Chain):
 		for name, layer in layers.iteritems():
 			if isinstance(layer, chainer.link.Link):
 				self.add_link(name, layer)
+			else:
+				setattr(self, name, layer)
 
 	def __call__(self, x, test=False):
 		for i in xrange(self.n_layers):
@@ -25,16 +26,18 @@ class Chain(chainer.Chain):
 		return x
 
 class Sequential(object):
-	def __init__(self):
+	def __init__(self, weight_initializer="Normal", weight_init_std=1):
 		self._layers = []
 		self.chain = None
 
-		self.weight_initializer = "Normal"	# Normal / GlorotNormal / HeNormal
-		self.weight_init_std = 1
+		self.weight_initializer = weight_initializer	# Normal / GlorotNormal / HeNormal
+		self.weight_init_std = weight_init_std
 
 	def add(self, layer):
 		if isinstance(layer, link.Link) or isinstance(layer, function.Function):
 			self._layers.append(layer)
+		elif isinstance(layer, function.Activation):
+			self._layers.append(layer.to_function())
 		else:
 			raise Exception()
 
@@ -51,9 +54,12 @@ class Sequential(object):
 
 	def dict_to_layer_args(self, dict):
 		args = copy.deepcopy(dict)
-		for attr, value in args.iteritems():
-			if attr[0] == "_":
-				del args[attr]
+		remove_keys = []
+		for key, value in args.iteritems():
+			if key[0] == "_":
+				remove_keys.append(key)
+		for key in remove_keys:
+			del args[key]
 		return args
 
 	def get_weight_initializer(self):
@@ -96,7 +102,14 @@ class Sequential(object):
 	def to_json(self):
 		result = []
 		for layer in self._layers:
-			result.append(layer.to_dict())
+			config = layer.to_dict()
+			dict = {}
+			for key, value in config.iteritems():
+				if isinstance(value, (int, str, bool)):
+					dict[key] = value
+				else:
+					print type(value)
+			result.append(dict)
 
 		return json.dumps(result, sort_keys=True, indent=4, separators=(',', ': '))
 
