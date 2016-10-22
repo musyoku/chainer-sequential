@@ -1,12 +1,36 @@
 import copy
 import json
+import chainer
 import link
 import function
+
+class Chain(chainer.Chain):
+
+	def __init__(self, layers):
+		super(Chain, self).__init__()
+		self.n_layers = len(layers)
+		for name, layer in layers.iteritems():
+			if isinstance(layer, chainer.link.Link):
+				self.add_link(name, layer)
+
+	def __call__(self, x, test=False):
+		for i in xrange(self.n_layers):
+			layer = getattr(self, "layer_%d" % i)
+			if isinstance(layer, function.dropout):
+				x = layer(x, train=not test)
+			elif isinstance(layer, chainer.links.BatchNormalization):
+				x = layer(x, test=test)
+			else:
+				x = layer(x)
+		return x
 
 class Sequential(object):
 	def __init__(self):
 		self._layers = []
-		self.sequence = []
+		self.chain = None
+
+		self.weight_initializer = "Normal"	# Normal / GlorotNormal / HeNormal
+		self.weight_init_std = 1
 
 	def add(self, layer):
 		if isinstance(layer, link.Link) or isinstance(layer, function.Function):
@@ -15,11 +39,11 @@ class Sequential(object):
 			raise Exception()
 
 	def layer_from_dict(self, dict):
-		if dict["_link"] is not None:
+		if "_link" in dict:
 			if hasattr(link, dict["_link"]):
 				args = self.dict_to_layer_args(dict)
 				return getattr(link, dict["_link"])(**args)
-		if dict["_function"] is not None:
+		if "_function" in dict:
 			if hasattr(function, dict["_function"]):
 				args = self.dict_to_layer_args(dict)
 				return getattr(function, dict["_function"])(**args)
@@ -27,14 +51,39 @@ class Sequential(object):
 
 	def dict_to_layer_args(self, dict):
 		args = copy.deepcopy(dict)
-		if "_link" in args:
-			del args["_link"]
-		if "_function" in args:
-			del args["_function"]
+		for attr, value in args.iteritems():
+			if attr[0] == "_":
+				del args[attr]
 		return args
+
+	def get_weight_initializer(self):
+		if self.weight_initializer.lower() == "normal":
+			return chainer.initializers.Normal(self.weight_init_std)
+		if self.weight_initializer.lower() == "glorotnormal":
+			return chainer.initializers.GlorotNormal(self.weight_init_std)
+		if self.weight_initializer.lower() == "henormal":
+			return chainer.initializers.HeNormal(self.weight_init_std)
+		raise Exception()
 
 	def layer_to_chainer_link(self, layer):
 		if hasattr(layer, "_link"):
+			if layer.has_multiple_weights() == True:
+				if isinstance(layer, link.GRU):
+					layer._init = self.get_weight_initializer()
+					layer._inner_init = self.get_weight_initializer()
+				elif isinstance(layer, link.LSTM):
+					layer._lateral_init  = self.get_weight_initializer()
+					layer._upward_init  = self.get_weight_initializer()
+					layer._bias_init = self.get_weight_initializer()
+					layer._forget_bias_init = self.get_weight_initializer()
+				elif isinstance(layer, link.StatelessLSTM):
+					layer._lateral_init  = self.get_weight_initializer()
+					layer._upward_init  = self.get_weight_initializer()
+				elif isinstance(layer, link.StatefulGRU):
+					layer._init = self.get_weight_initializer()
+					layer._inner_init = self.get_weight_initializer()
+			else:
+				layer._initialW = self.get_weight_initializer()
 			return layer.to_link()
 		if hasattr(layer, "_function"):
 			return layer
@@ -52,16 +101,16 @@ class Sequential(object):
 		return json.dumps(result, sort_keys=True, indent=4, separators=(',', ': '))
 
 	def from_json(self, str):
-		self.sequence = []
+		self.chain = None
 		self._layers = []
-		a = json.loads(str)
-		for dict in a:
+		attributes = {}
+		dict_array = json.loads(str)
+		for i, dict in enumerate(dict_array):
 			layer = self.layer_from_dict(dict)
 			link = self.layer_to_chainer_link(layer)
-			self.sequence.append(link)
+			attributes["layer_%d" % i] = link
 			self._layers.append(layer)
+		self.chain = Chain(attributes)
 
-	def __call__(self, x):
-		for layer in self.sequence:
-			x = layer(x)
-		return x
+	def __call__(self, x, test=False):
+		return self.chain(x, test)

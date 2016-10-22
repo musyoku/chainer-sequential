@@ -7,6 +7,9 @@ class Link(object):
 	def __call__(self, x):
 		raise NotImplementedError()
 
+	def has_multiple_weight(self):
+		return False
+
 	def from_dict(self, dict):
 		for attr, value in dict.iteritems():
 			setattr(self, attr, value)
@@ -34,29 +37,6 @@ class Link(object):
 		for attr, value in self.__dict__.iteritems():
 			print "	{}: {}".format(attr, value)
 
-class Bias(Link):
-	def __init__(self, axis=1, shape=None):
-		self._link = "Bias"
-		self.axis = axis
-		self.shape = shape
-
-	def to_link(self):
-		args = self.to_chainer_args()
-		return chainer.links.Bias(**args)
-
-class Bilinear(Link):
-	def __init__(self, left_size, right_size, out_size, nobias=False):
-		self._link = "Bilinear"
-		self.left_size = left_size
-		self.right_size = right_size
-		self.out_size = out_size
-		self.nobias = nobias
-
-	def to_link(self):
-		args = self.to_chainer_args()
-		return chainer.links.Bilinear(**args)
-
-
 class Convolution2D(Link):
 	def __init__(self, in_channels, out_channels, ksize, stride=1, pad=0, wscale=1, bias=0, nobias=False, use_cudnn=True, use_weightnorm=False):
 		self._link = "Convolution2D"
@@ -73,8 +53,14 @@ class Convolution2D(Link):
 
 	def to_link(self):
 		args = self.to_chainer_args()
+		del args["use_weightnorm"]
 		if self.use_weightnorm:
+			if hasattr(self, "_initialW"):
+				args["initialV"] = self._initialW
 			return links.weightnorm.Convolution2D(**args)
+
+		if hasattr(self, "_initialW"):
+			args["initialW"] = self._initialW
 		return chainer.links.Convolution2D(**args)
 
 class Deconvolution2D(Link):
@@ -94,8 +80,13 @@ class Deconvolution2D(Link):
 
 	def to_link(self):
 		args = self.to_chainer_args()
+		del args["use_weightnorm"]
 		if self.use_weightnorm:
+			if hasattr(self, "_initialW"):
+				args["initialV"] = self._initialW
 			return links.weightnorm.Deconvolution2D(**args)
+		if hasattr(self, "_initialW"):
+			args["initialW"] = self._initialW
 		return chainer.links.Deconvolution2D(**args)
 
 class DilatedConvolution2D(Link):
@@ -114,6 +105,8 @@ class DilatedConvolution2D(Link):
 
 	def to_link(self):
 		args = self.to_chainer_args()
+		if hasattr(self, "_initialW"):
+			args["initialW"] = self._initialW
 		return chainer.links.DilatedConvolution2D(**args)
 
 class EmbedID(Link):
@@ -125,6 +118,8 @@ class EmbedID(Link):
 
 	def to_link(self):
 		args = self.to_chainer_args()
+		if hasattr(self, "_initialW"):
+			args["initialW"] = self._initialW
 		return chainer.links.EmbedID(**args)
 
 class GRU(Link):
@@ -135,22 +130,14 @@ class GRU(Link):
 
 	def to_link(self):
 		args = self.to_chainer_args()
+		if hasattr(self, "_init"):
+			args["init"] = self._init
+		if hasattr(self, "_inner_init"):
+			args["inner_init"] = self._inner_init
 		return chainer.links.GRU(**args)
 
-class Inception(Link):
-	def __init__(self, in_channels, out1, proj3, out3, proj5, out5, proj_pool):
-		self._link = "Inception"
-		self.in_channels = in_channels
-		self.out1 = out1
-		self.proj3 = proj3
-		self.out3 = out3
-		self.proj5 = proj5
-		self.out5 = out5
-		self.proj_pool = proj_pool
-
-	def to_link(self):
-		args = self.to_chainer_args()
-		return chainer.links.Inception(**args)
+	def has_multiple_weight(self):
+		return True
 
 class Linear(Link):
 	def __init__(self, in_size, out_size, wscale=1, bias=0, nobias=False, use_weightnorm=False):
@@ -164,8 +151,13 @@ class Linear(Link):
 
 	def to_link(self):
 		args = self.to_chainer_args()
+		del args["use_weightnorm"]
 		if self.use_weightnorm:
+			if hasattr(self, "_initialW"):
+				args["initialV"] = self._initialW
 			return links.weightnorm.Linear(**args)
+		if hasattr(self, "_initialW"):
+			args["initialW"] = self._initialW
 		return chainer.links.Linear(**args)
 
 class LSTM(Link):
@@ -176,7 +168,18 @@ class LSTM(Link):
 
 	def to_link(self):
 		args = self.to_chainer_args()
-		return chainer.links.LSTM(**args)
+		if hasattr(self, "_lateral_init"):
+			args["lateral_init"] = self._lateral_init
+		if hasattr(self, "_upward_init"):
+			args["upward_init"] = self._upward_init
+		if hasattr(self, "_bias_init"):
+			args["bias_init"] = self._bias_init
+		if hasattr(self, "_forget_bias_init"):
+			args["forget_bias_init"] = self._forget_bias_init
+		return chainer.links.GRU(**args)
+
+	def has_multiple_weight(self):
+		return True
 
 class StatelessLSTM(Link):
 	def __init__(self, in_size, out_size):
@@ -186,19 +189,14 @@ class StatelessLSTM(Link):
 
 	def to_link(self):
 		args = self.to_chainer_args()
-		return chainer.links.StatelessLSTM(**args)
+		if hasattr(self, "_lateral_init"):
+			args["lateral_init"] = self._lateral_init
+		if hasattr(self, "_upward_init"):
+			args["upward_init"] = self._upward_init
+		return chainer.links.GRU(**args)
 
-class Scale(Link):
-	def __init__(self, axis=1, W_shape=None, bias_term=False, bias_shape=None):
-		self._link = "Scale"
-		self.axis = axis
-		self.W_shape = W_shape
-		self.bias_term = bias_term
-		self.bias_shape = bias_shape
-
-	def to_link(self):
-		args = self.to_chainer_args()
-		return chainer.links.Scale(**args)
+	def has_multiple_weight(self):
+		return True
 
 class StatefulGRU(Link):
 	def __init__(self, in_size, out_size, bias_init=0):
@@ -209,7 +207,14 @@ class StatefulGRU(Link):
 
 	def to_link(self):
 		args = self.to_chainer_args()
-		return chainer.links.StatefulGRU(**args)
+		if hasattr(self, "_init"):
+			args["init"] = self._init
+		if hasattr(self, "_inner_init"):
+			args["inner_init"] = self._inner_init
+		return chainer.links.GRU(**args)
+
+	def has_multiple_weight(self):
+		return True
 
 class StatefulPeepholeLSTM(Link):
 	def __init__(self, in_size, out_size):
@@ -222,7 +227,7 @@ class StatefulPeepholeLSTM(Link):
 		return chainer.links.StatefulPeepholeLSTM(**args)
 
 class BatchNormalization(Link):
-	def __init__(self, size, decay=0.9, eps=2e-05, dtype=numpy.float32, use_gamma=True, use_beta=True, use_cudnn=True):
+	def __init__(self, size, decay=0.9, eps=2e-05, dtype="float32", use_gamma=True, use_beta=True, use_cudnn=True):
 		self._link = "BatchNormalization"
 		self.size = size
 		self.decay = decay
@@ -234,4 +239,10 @@ class BatchNormalization(Link):
 
 	def to_link(self):
 		args = self.to_chainer_args()
+		if args["dtype"] == "float32":
+			args["dtype"] = numpy.float32
+		elif args["dtype"] == "float64":
+			args["dtype"] = numpy.float64
+		elif args["dtype"] == "float16":
+			args["dtype"] = numpy.float16
 		return chainer.links.BatchNormalization(**args)

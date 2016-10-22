@@ -1,7 +1,7 @@
 from chainer import functions as F
 
 class Function(object):
-	
+
 	def __call__(self, x):
 		raise NotImplementedError()
 
@@ -148,6 +148,15 @@ class dropout(Function):
 
 	def __call__(self, x, test=False):
 		return F.dropout(x, self.ratio, test)
+
+class gaussian_noise(Function):
+	def __init__(self, std=0.3):
+		self._function = "gaussian_noise"
+		self.std = std
+
+	def __call__(self, x):
+		noise = F.gaussian(0, math.log(self.std ** 2))
+		return x + noise
 
 class average_pooling_2d(Function):
 	def __init__(self, ksize, stride=None, pad=0, use_cudnn=True):
