@@ -50,13 +50,13 @@ seq = Sequential(weight_initializer="GlorotNormal", weight_init_std=0.05)
 seq.add(link.Convolution2D(3, 64, ksize=4, stride=2, pad=0))
 seq.add(link.BatchNormalization(64))
 seq.add(function.Activation("relu"))
-seq.add(link.Convolution2D(64, 128, ksize=4, stride=2, pad=0, use_weightnorm=True))
+seq.add(link.Convolution2D(64, 128, ksize=4, stride=2, pad=0))
 seq.add(link.BatchNormalization(128))
 seq.add(function.Activation("relu"))
 seq.add(link.Convolution2D(128, 256, ksize=4, stride=2, pad=0))
 seq.add(link.BatchNormalization(256))
 seq.add(function.Activation("relu"))
-seq.add(link.Convolution2D(256, 512, ksize=4, stride=2, pad=0, use_weightnorm=True))
+seq.add(link.Convolution2D(256, 512, ksize=4, stride=2, pad=0))
 seq.add(link.BatchNormalization(512))
 seq.add(function.Activation("relu"))
 seq.add(link.Convolution2D(512, 1024, ksize=4, stride=2, pad=0))
@@ -66,31 +66,33 @@ seq.add(function.reshape_1d())
 seq.add(link.Linear(None, 10, use_weightnorm=True))
 seq.add(function.softmax())
 seq.build()
-print seq.to_json()
 
 y = seq(x)
 print y.data
 
 # Deconv test
-x = np.random.normal(scale=1, size=(2, 128)).astype(np.float32)
+x = np.random.normal(scale=1, size=(2, 100)).astype(np.float32)
 x = Variable(x)
 
+image_size = 96
+# compute projection width
+input_size = util.get_in_size_of_deconv_layers(image_size, num_layers=3, ksize=4, stride=2)
 # compute required paddings
-paddings = []
-
+paddings = util.get_paddings_of_deconv_layers(image_size, num_layers=3, ksize=4, stride=2)
 
 seq = Sequential(weight_initializer="GlorotNormal", weight_init_std=0.05)
-seq.add(link.Convolution2D(3, 64, ksize=4, stride=2, pad=9))
-seq.add(link.BatchNormalization(64))
-out_size.append(util.get_conv_outsize(16, 3, 7, 9))
-seq.add(link.Convolution2D(64, 128, ksize=4, stride=2, pad=4, use_weightnorm=True))
-seq.add(link.BatchNormalization(128))
-out_size.append(util.get_conv_outsize(out_size[-1], 4, 1, 4))
-seq.add(link.Convolution2D(128, 256, ksize=4, stride=2, pad=2))
-seq.add(link.BatchNormalization(256))
-out_size.append(util.get_conv_outsize(out_size[-1], 5, 4, 2))
-seq.add(link.Convolution2D(256, 512, ksize=4, stride=2, pad=2))
-seq.add(link.BatchNormalization(512))
-out_size.append(util.get_conv_outsize(out_size[-1], 5, 4, 2))
-seq.add(function.reshape((-1, out_size[-1] ** 2 * 512)))
+seq.add(link.Linear(100, 64 * input_size ** 2))
+seq.add(link.BatchNormalization(64 * input_size ** 2))
+seq.add(function.Activation("relu"))
+seq.add(function.reshape((-1, 64, input_size, input_size)))
+seq.add(link.Deconvolution2D(64, 32, ksize=4, stride=2, pad=paddings.pop(0)))
+seq.add(link.BatchNormalization(32))
+seq.add(function.Activation("relu"))
+seq.add(link.Deconvolution2D(32, 16, ksize=4, stride=2, pad=paddings.pop(0)))
+seq.add(link.BatchNormalization(16))
+seq.add(function.Activation("relu"))
+seq.add(link.Deconvolution2D(16, 3, ksize=4, stride=2, pad=paddings.pop(0)))
 seq.build()
+
+y = seq(x)
+print y.data.shape

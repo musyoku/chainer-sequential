@@ -105,10 +105,8 @@ class Sequential(object):
 			config = layer.to_dict()
 			dict = {}
 			for key, value in config.iteritems():
-				if isinstance(value, (int, str, bool)):
+				if isinstance(value, (int, float, str, bool, type(None), tuple, list, dict)):
 					dict[key] = value
-				else:
-					print type(value)
 			result.append(dict)
 
 		return json.dumps(result, sort_keys=True, indent=4, separators=(',', ': '))
