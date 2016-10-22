@@ -1,6 +1,6 @@
 import numpy
 import chainer
-import links
+import weightnorm
 import util
 
 class Link(object):
@@ -57,7 +57,7 @@ class Convolution2D(Link):
 		if self.use_weightnorm:
 			if hasattr(self, "_initialW"):
 				args["initialV"] = self._initialW
-			return links.weightnorm.Convolution2D(**args)
+			return weightnorm.Convolution2D(**args)
 
 		if hasattr(self, "_initialW"):
 			args["initialW"] = self._initialW
@@ -83,7 +83,7 @@ class Deconvolution2D(Link):
 		if self.use_weightnorm:
 			if hasattr(self, "_initialW"):
 				args["initialV"] = self._initialW
-			return links.weightnorm.Deconvolution2D(**args)
+			return weightnorm.Deconvolution2D(**args)
 		if hasattr(self, "_initialW"):
 			args["initialW"] = self._initialW
 		return chainer.links.Deconvolution2D(**args)
@@ -152,7 +152,7 @@ class Linear(Link):
 		if self.use_weightnorm:
 			if hasattr(self, "_initialW"):
 				args["initialV"] = self._initialW
-			return links.weightnorm.Linear(**args)
+			return weightnorm.Linear(**args)
 		if hasattr(self, "_initialW"):
 			args["initialW"] = self._initialW
 		return chainer.links.Linear(**args)
