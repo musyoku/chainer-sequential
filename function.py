@@ -1,3 +1,5 @@
+import math
+from chainer import cuda, Variable
 from chainer import functions as F
 
 class Function(object):
@@ -153,7 +155,9 @@ class gaussian_noise(Function):
 		self.std = std
 
 	def __call__(self, x):
-		noise = F.gaussian(0, math.log(self.std ** 2))
+		xp = cuda.get_array_module(x.data)
+		ln_var = math.log(self.std ** 2)
+		noise = F.gaussian(Variable(xp.zeros_like(x.data)), Variable(xp.full_like(x.data, ln_var)))
 		return x + noise
 
 class average_pooling_2d(Function):

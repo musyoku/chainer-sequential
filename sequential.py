@@ -78,15 +78,19 @@ class Sequential(object):
 		self.from_json(json)
 
 	def to_dict(self):
-		result = []
+		layers = []
 		for layer in self._layers:
 			config = layer.to_dict()
 			dic = {}
 			for key, value in config.iteritems():
 				if isinstance(value, (int, float, str, bool, type(None), tuple, list, dict)):
 					dic[key] = value
-			result.append(dic)
-		return result
+			layers.append(dic)
+		return {
+			"layers": layers,
+			"weight_initializer": self.weight_initializer,
+			"weight_init_std": self.weight_init_std
+		}
 
 	def to_json(self):
 		result = self.to_dict()
@@ -99,9 +103,11 @@ class Sequential(object):
 		dict_array = json.loads(str)
 		self.from_dict(dict_array)
 
-	def from_dict(self, dict_array):
-		for i, dict in enumerate(dict_array):
-			layer = self.layer_from_dict(dict)
+	def from_dict(self, dict):
+		self.weight_initializer = dict["weight_initializer"]
+		self.weight_init_std = dict["weight_init_std"]
+		for i, layer_dict in enumerate(dict["layers"]):
+			layer = self.layer_from_dict(layer_dict)
 			link = self.layer_to_chainer_link(layer)
 			self.links.append(link)
 			self._layers.append(layer)
