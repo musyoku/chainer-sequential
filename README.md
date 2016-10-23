@@ -6,7 +6,6 @@ ChainerをKerasっぽく書きたいという思いから作りました。
 
 ## Requirements
 - Chainer 1.17
-- [weightnorm](https://github.com/musyoku/weight-normalization)
 
 ## Usage
 
