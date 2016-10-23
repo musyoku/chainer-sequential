@@ -146,8 +146,8 @@ class dropout(Function):
 		self._function = "dropout"
 		self.ratio = ratio
 
-	def __call__(self, x, test=False):
-		return F.dropout(x, self.ratio, test)
+	def __call__(self, x, train=True):
+		return F.dropout(x, self.ratio, train)
 
 class gaussian_noise(Function):
 	def __init__(self, std=0.3):
