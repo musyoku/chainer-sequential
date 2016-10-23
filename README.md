@@ -102,19 +102,19 @@ model = Sequential(weight_initializer="HeNormal", weight_init_std=0.05)
 ## DCGAN
 
 ```
-import util, link, function
+import util
 
 image_width = 96
 
 disciminator = Sequential()
-disciminator.add(link.Convolution2D(3, 64, ksize=4, stride=2, pad=0))
-disciminator.add(function.Activation("elu"))
-disciminator.add(link.Convolution2D(64, 128, ksize=4, stride=2, pad=0))
-disciminator.add(function.Activation("elu"))
-disciminator.add(link.Convolution2D(128, 256, ksize=4, stride=2, pad=0))
-disciminator.add(function.Activation("elu"))
-disciminator.add(link.Linear(None, 1))
-disciminator.add(function.sigmoid())
+disciminator.add(Convolution2D(3, 64, ksize=4, stride=2, pad=0))
+disciminator.add(Activation("elu"))
+disciminator.add(Convolution2D(64, 128, ksize=4, stride=2, pad=0))
+disciminator.add(Activation("elu"))
+disciminator.add(Convolution2D(128, 256, ksize=4, stride=2, pad=0))
+disciminator.add(Activation("elu"))
+disciminator.add(Linear(None, 1))
+disciminator.add(sigmoid())
 disciminator.build()
 
 # compute projection width
@@ -124,16 +124,16 @@ input_width = util.get_in_size_of_deconv_layers(image_width, num_layers=3, ksize
 paddings = util.get_paddings_of_deconv_layers(image_width, num_layers=3, ksize=4, stride=2)
 
 generator = Sequential()
-generator.add(link.Linear(100, 64 * input_width ** 2))
-generator.add(link.BatchNormalization(64 * input_width ** 2))
-generator.add(function.Activation("relu"))
-generator.add(function.reshape((-1, 64, input_width, input_width)))
-generator.add(link.Deconvolution2D(64, 32, ksize=4, stride=2, pad=paddings.pop(0)))
-generator.add(link.BatchNormalization(32))
-generator.add(function.Activation("relu"))
-generator.add(link.Deconvolution2D(32, 16, ksize=4, stride=2, pad=paddings.pop(0)))
-generator.add(link.BatchNormalization(16))
-generator.add(function.Activation("relu"))
-generator.add(link.Deconvolution2D(16, 3, ksize=4, stride=2, pad=paddings.pop(0)))
+generator.add(Linear(100, 64 * input_width ** 2))
+generator.add(BatchNormalization(64 * input_width ** 2))
+generator.add(Activation("relu"))
+generator.add(reshape((-1, 64, input_width, input_width)))
+generator.add(Deconvolution2D(64, 32, ksize=4, stride=2, pad=paddings.pop(0)))
+generator.add(BatchNormalization(32))
+generator.add(Activation("relu"))
+generator.add(Deconvolution2D(32, 16, ksize=4, stride=2, pad=paddings.pop(0)))
+generator.add(BatchNormalization(16))
+generator.add(Activation("relu"))
+generator.add(Deconvolution2D(16, 3, ksize=4, stride=2, pad=paddings.pop(0)))
 generator.build()
 ```

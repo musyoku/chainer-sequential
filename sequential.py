@@ -22,15 +22,15 @@ class Sequential(object):
 	def layer_from_dict(self, dict):
 		if "_link" in dict:
 			if hasattr(link, dict["_link"]):
-				args = self.dict_to_layer_args(dict)
+				args = self.dict_to_layer_init_args(dict)
 				return getattr(link, dict["_link"])(**args)
 		if "_function" in dict:
 			if hasattr(function, dict["_function"]):
-				args = self.dict_to_layer_args(dict)
+				args = self.dict_to_layer_init_args(dict)
 				return getattr(function, dict["_function"])(**args)
 		raise Exception()
 
-	def dict_to_layer_args(self, dict):
+	def dict_to_layer_init_args(self, dict):
 		args = copy.deepcopy(dict)
 		remove_keys = []
 		for key, value in args.iteritems():
