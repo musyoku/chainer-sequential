@@ -113,7 +113,7 @@ disciminator.add(link.Convolution2D(64, 128, ksize=4, stride=2, pad=0))
 disciminator.add(function.Activation("elu"))
 disciminator.add(link.Convolution2D(128, 256, ksize=4, stride=2, pad=0))
 disciminator.add(function.Activation("elu"))
-disciminator.add(link.Linear(None, 1, use_weightnorm=True))
+disciminator.add(link.Linear(None, 1))
 disciminator.add(function.sigmoid())
 disciminator.build()
 
