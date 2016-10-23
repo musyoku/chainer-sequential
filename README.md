@@ -55,7 +55,7 @@ for i, link in enumerate(model.links):
 ## JSON
 
 ```
-model.to_json()
+json_str = model.to_json()
 model.from_json(json_str)
 ```
 
