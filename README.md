@@ -107,11 +107,11 @@ import util
 image_width = 96
 
 disciminator = Sequential()
-disciminator.add(Convolution2D(3, 64, ksize=4, stride=2, pad=0))
+disciminator.add(Convolution2D(3, 64, ksize=4, stride=2, pad=1))
 disciminator.add(Activation("elu"))
-disciminator.add(Convolution2D(64, 128, ksize=4, stride=2, pad=0))
+disciminator.add(Convolution2D(64, 128, ksize=4, stride=2, pad=1))
 disciminator.add(Activation("elu"))
-disciminator.add(Convolution2D(128, 256, ksize=4, stride=2, pad=0))
+disciminator.add(Convolution2D(128, 256, ksize=4, stride=2, pad=1))
 disciminator.add(Activation("elu"))
 disciminator.add(Linear(None, 1))
 disciminator.add(sigmoid())
