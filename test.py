@@ -1,9 +1,11 @@
 import numpy as np
 from chainer import Variable
+from chainer import functions as F
 from sequential import Sequential
 import link
 import function
 import util
+import chain
 
 # Linear test
 x = np.random.normal(scale=1, size=(2, 28*28)).astype(np.float32)
@@ -40,7 +42,7 @@ seq.add(link.Linear(500, 10))
 seq.build()
 
 y = seq(x)
-print y.data
+print y.data.shape
 
 # Conv test
 x = np.random.normal(scale=1, size=(2, 3, 96, 96)).astype(np.float32)
@@ -67,7 +69,7 @@ seq.add(function.softmax())
 seq.build()
 
 y = seq(x)
-print y.data
+print y.data.shape
 
 # Deconv test
 x = np.random.normal(scale=1, size=(2, 100)).astype(np.float32)
@@ -95,3 +97,29 @@ seq.build()
 
 y = seq(x)
 print y.data.shape
+
+# train test
+x = np.random.normal(scale=1, size=(128, 28*28)).astype(np.float32)
+x = Variable(x)
+
+seq = Sequential(weight_initializer="GlorotNormal", weight_init_std=0.05)
+seq.add(link.Linear(28*28, 500, use_weightnorm=True))
+seq.add(link.BatchNormalization(500))
+seq.add(function.Activation("relu"))
+seq.add(link.Linear(None, 500, use_weightnorm=True))
+seq.add(link.BatchNormalization(500))
+seq.add(function.Activation("relu"))
+seq.add(link.Linear(500, 28*28, use_weightnorm=True))
+seq.build()
+
+chain = chain.Chain()
+chain.add_sequence(seq)
+chain.setup_optimizers("adam", 0.001, momentum=0.9, weight_decay=0.000001, gradient_clipping=10)
+
+for i in xrange(100):
+	y = chain(x)
+	loss = F.mean_squared_error(x, y)
+	chain.backprop(loss)
+	print float(loss.data)
+
+chain.save("model")

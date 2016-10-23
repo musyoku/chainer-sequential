@@ -1,6 +1,7 @@
 import link
 import function
 import util
+import chain
 from sequential import *
 
 def from_json(str):
