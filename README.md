@@ -2,7 +2,11 @@ ChainerをKerasっぽく書きたいという思いから作りました。
 
 ただしKerasを使ったことがないのであくまでそれっぽいというだけです。
 
-[weightnorm](https://github.com/musyoku/weight-normalization)
+内部的にはChainerのLinkやFunctionをユーザーが定義したとおりの順に並べて実行します。
+
+## Requirements
+- Chainer 1.17
+- [weightnorm](https://github.com/musyoku/weight-normalization)
 
 ## Usage
 
