@@ -2,6 +2,8 @@ ChainerをKerasっぽく書きたいという思いから作りました。
 
 ただしKerasを使ったことがないのであくまでそれっぽいというだけです。
 
+[weightnorm](https://github.com/musyoku/weight-normalization)
+
 ## Usage
 
 ```
