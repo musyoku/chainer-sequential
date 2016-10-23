@@ -111,7 +111,7 @@ input_width = util.get_in_size_of_deconv_layers(image_width, num_layers=3, ksize
 # compute required paddings
 paddings = util.get_paddings_of_deconv_layers(image_width, num_layers=3, ksize=4, stride=2)
 
-generator = Sequential(weight_initializer="GlorotNormal", weight_init_std=0.05)
+generator = Sequential()
 generator.add(link.Linear(100, 64 * input_width ** 2))
 generator.add(link.BatchNormalization(64 * input_width ** 2))
 generator.add(function.Activation("relu"))
