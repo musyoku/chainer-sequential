@@ -140,7 +140,6 @@ class Convolution2D(link.Link):
 		self.in_channels = in_channels
 		self.dtype = dtype
 
-		self.weight_initialized = False
 		self.initialV = initialV
 		self.wscale = wscale
 		self.nobias = nobias
@@ -161,7 +160,6 @@ class Convolution2D(link.Link):
 		kh, kw = _pair(self.ksize)
 		W_shape = (self.out_channels, in_channels, kh, kw)
 		self.add_param("V", W_shape, initializer=initializers._get_initializer(self.initialV, math.sqrt(self.wscale)))
-		self.weight_initialized = True
 
 	def _initialize_params(self, t):
 		xp = cuda.get_array_module(t)
@@ -185,7 +183,7 @@ class Convolution2D(link.Link):
 		return self.g.data * V
 
 	def __call__(self, x):
-		if self.weight_initialized == False:
+		if hasattr(self, "V") == False:
 			with cuda.get_device(self._device_id):
 				self._initialize_weight(x.shape[1])
 

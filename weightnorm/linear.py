@@ -92,7 +92,6 @@ class Linear(link.Link):
 	def __init__(self, in_size, out_size, wscale=1, bias=0, nobias=False, initialV=None, dtype=np.float32):
 		super(Linear, self).__init__()
 
-		self.weight_initialized = False
 		self.initialV = initialV
 		self.wscale = wscale
 		self.nobias = nobias
@@ -113,7 +112,6 @@ class Linear(link.Link):
 
 	def _initialize_weight(self, in_size):
 		self.add_param("V", (self.out_size, in_size), initializer=initializers._get_initializer(self.initialV, math.sqrt(self.wscale)))
-		self.weight_initialized = True
 
 	def _initialize_params(self, t):
 		xp = cuda.get_array_module(t)
@@ -136,7 +134,7 @@ class Linear(link.Link):
 		return self.g.data * V
 
 	def __call__(self, x):
-		if self.weight_initialized == False:
+		if hasattr(self, "V") == False:
 			with cuda.get_device(self._device_id):
 				self._initialize_weight(x.size // len(x.data))
 
