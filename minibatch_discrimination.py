@@ -36,11 +36,9 @@ class MinibatchDiscriminationFunction(function.Function):
 		x = _as_mat(inputs[0])
 		T = inputs[1]
 		xp = cuda.get_array_module(T)
+		batchsize = x.shape[0]
 
 		kernels = xp.tensordot(x, T, axes=(1, 0))
-		print x.shape
-		print T.shape
-		print kernels.shape
 		print kernels
 
 		# A slower but equivalent way of computing the same...
@@ -52,15 +50,27 @@ class MinibatchDiscriminationFunction(function.Function):
 		# 				_kernels[i, k, j] += x[i, l] * T[l, k, j]
 		# print _kernels
 
+		kernels = xp.expand_dims(kernels, 3)
+		kernels_t = xp.transpose(kernels, (3, 1, 2, 0))
+		kernels, kernels_t = xp.broadcast_arrays(kernels, kernels_t)
 
-		self.normV = get_norm(T)
-		self.normalizedV = T / self.normV
-		self.W = g * self.normalizedV
+		print kernels
+		print kernels.shape
+		print kernels_t
+		print kernels_t.shape
 
-		y = x.dot(self.W.T).astype(x.dtype, copy=False)
-		if len(inputs) == 3:
-			b = inputs[2]
-			y += b
+		c_b = xp.sum(abs(kernels - kernels_t), axis=2)
+		print c_b
+		eraser = xp.broadcast_to(xp.eye(batchsize).reshape((batchsize, 1, batchsize)), c_b.shape)
+		print eraser
+		c_b = xp.exp(-(c_b + 1e6 * eraser))
+		print c_b
+		o_b = xp.sum(c_b, axis=2)
+		print o_b
+		print x
+		y = xp.append(x, o_b, axis=1)
+		print y
+
 		return y,
 
 	def backward(self, inputs, grad_outputs):
