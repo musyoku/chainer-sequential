@@ -136,16 +136,16 @@ disciminator.add(sigmoid())
 disciminator.build()
 
 # compute projection width
-input_width = util.get_in_size_of_deconv_layers(image_width, num_layers=3, ksize=4, stride=2)
+projection_width = util.get_in_size_of_deconv_layers(image_width, num_layers=3, ksize=4, stride=2)
 
 # compute required paddings
 paddings = util.get_paddings_of_deconv_layers(image_width, num_layers=3, ksize=4, stride=2)
 
 generator = Sequential()
-generator.add(Linear(100, 64 * input_width ** 2))
-generator.add(BatchNormalization(64 * input_width ** 2))
+generator.add(Linear(100, 64 * projection_width ** 2))
+generator.add(BatchNormalization(64 * projection_width ** 2))
 generator.add(Activation("relu"))
-generator.add(reshape((-1, 64, input_width, input_width)))
+generator.add(reshape((-1, 64, projection_width, projection_width)))
 generator.add(Deconvolution2D(64, 32, ksize=4, stride=2, pad=paddings.pop(0)))
 generator.add(BatchNormalization(32))
 generator.add(Activation("relu"))
