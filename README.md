@@ -99,6 +99,24 @@ model = Sequential(weight_initializer="GlorotNormal", weight_init_std=0.05)
 model = Sequential(weight_initializer="HeNormal", weight_init_std=0.05)
 ```
 
+## Minibatch Discrimination
+
+```
+model.add(link.Convolution2D(256, 1024, ksize=4, stride=2, pad=1))
+model.add(function.reshape_1d())
+model.add(link.MinibatchDiscrimination(None, num_kernels=50, ndim_kernel=5))
+```
+
+## Merge inputs
+
+```
+model.add(link.Merge(num_inputs=2, out_size=500))
+...
+x = ...
+y = ...
+output = model(x, y)
+```
+
 ## DCGAN
 
 ```

@@ -51,21 +51,26 @@ class Sequential(object):
 
 	def layer_to_chainer_link(self, layer):
 		if hasattr(layer, "_link"):
-			if layer.has_multiple_weights() == True:
-				if isinstance(layer, link.GRU):
-					layer._init = self.get_weight_initializer()
-					layer._inner_init = self.get_weight_initializer()
-				elif isinstance(layer, link.LSTM):
-					layer._lateral_init  = self.get_weight_initializer()
-					layer._upward_init  = self.get_weight_initializer()
-					layer._bias_init = self.get_weight_initializer()
-					layer._forget_bias_init = self.get_weight_initializer()
-				elif isinstance(layer, link.StatelessLSTM):
-					layer._lateral_init  = self.get_weight_initializer()
-					layer._upward_init  = self.get_weight_initializer()
-				elif isinstance(layer, link.StatefulGRU):
-					layer._init = self.get_weight_initializer()
-					layer._inner_init = self.get_weight_initializer()
+			if isinstance(layer, link.GRU):
+				layer._init = self.get_weight_initializer()
+				layer._inner_init = self.get_weight_initializer()
+			elif isinstance(layer, link.LSTM):
+				layer._lateral_init  = self.get_weight_initializer()
+				layer._upward_init  = self.get_weight_initializer()
+				layer._bias_init = self.get_weight_initializer()
+				layer._forget_bias_init = self.get_weight_initializer()
+			elif isinstance(layer, link.StatelessLSTM):
+				layer._lateral_init  = self.get_weight_initializer()
+				layer._upward_init  = self.get_weight_initializer()
+			elif isinstance(layer, link.StatefulGRU):
+				layer._init = self.get_weight_initializer()
+				layer._inner_init = self.get_weight_initializer()
+			elif isinstance(layer, link.Gaussian):
+				layer._initialW_mean = self.get_weight_initializer()
+				layer._initialW_ln_var = self.get_weight_initializer()
+			elif isinstance(layer, link.Merge):
+				for i in xrange(layer.num_inputs):
+					setattr(layer, "_initialW_%d" % i, self.get_weight_initializer())
 			else:
 				layer._initialW = self.get_weight_initializer()
 			return layer.to_link()
@@ -112,16 +117,18 @@ class Sequential(object):
 			self.links.append(link)
 			self._layers.append(layer)
 
-
-	def __call__(self, x, test=False):
-		return self.links(x, test)
-
-	def __call__(self, x, test=False):
-		for i, link in enumerate(self.links):
-			if isinstance(link, function.dropout):
-				x = link(x, train=not test)
-			elif isinstance(link, chainer.links.BatchNormalization):
-				x = link(x, test=test)
+	def __call__(self, *args, **kwargs):
+		x = None
+		if "test" not in kwargs:
+			kwargs["test"] = False
+		for func in self.links:
+			if isinstance(func, function.dropout):
+				x = func(args[0] if x is None else x, train=not kwargs["test"])
+			elif isinstance(func, chainer.links.BatchNormalization):
+				x = func(args[0] if x is None else x, test=kwargs["test"])
 			else:
-				x = link(x)
+				if x is None:
+					x = func(*args)
+				else:
+					x = func(x)
 		return x

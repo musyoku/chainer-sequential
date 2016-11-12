@@ -2,6 +2,7 @@ import numpy
 import chainer
 import weightnorm
 import util
+from chainer import functions as F
 
 class Link(object):
 	
@@ -134,9 +135,6 @@ class GRU(Link):
 			args["inner_init"] = self._inner_init
 		return chainer.links.GRU(**args)
 
-	def has_multiple_weights(self):
-		return True
-
 class Linear(Link):
 	def __init__(self, in_size, out_size, bias=0, nobias=False, use_weightnorm=False):
 		self._link = "Linear"
@@ -157,6 +155,74 @@ class Linear(Link):
 			args["initialW"] = self._initialW
 		return chainer.links.Linear(**args)
 
+class Merge(Link):
+	def __init__(self, num_inputs, out_size, bias=0, nobias=False, use_weightnorm=False):
+		self._link = "Merge"
+		self.num_inputs = num_inputs
+		self.out_size = out_size
+		self.bias = bias
+		self.nobias = nobias
+		self.use_weightnorm = use_weightnorm
+
+	def to_link(self):
+		link = _Merge()
+		for i in xrange(self.num_inputs):
+			args = self.to_chainer_args()
+			del args["use_weightnorm"]
+			del args["num_inputs"]
+			if hasattr(self, "_initialW_%d" % i):
+				args["initialW"] = getattr(self, "_initialW_%d" % i)
+			if self.use_weightnorm:
+				merge_layer = weightnorm.Linear(None, **args)
+			else:
+				merge_layer = chainer.links.Linear(None, **args)
+			link.append_layer(merge_layer)
+		return link
+
+class _Merge(object):
+	def __init__(self):
+		self.merge_layers = []
+
+	def append_layer(self, layer):
+		self.merge_layers.append(layer)
+
+	def __call__(self, *args):
+		output = 0
+		for i, data in enumerate(args):
+			output += self.merge_layers[i](data)
+		return output
+
+class Gaussian(Link):
+	def __init__(self, in_size, out_size, bias=0, nobias=False, use_weightnorm=False):
+		self._link = "Gaussian"
+		self.in_size = in_size
+		self.out_size = out_size
+		self.bias = bias
+		self.nobias = nobias
+		self.use_weightnorm = use_weightnorm
+
+	def to_link(self):
+		args = self.to_chainer_args()
+		del args["use_weightnorm"]
+		# mean
+		if hasattr(self, "_initialW_mean"):
+			args["initialW"] = getattr(self, "_initialW_mean")
+		if self.use_weightnorm:
+			self.layer_mean = weightnorm.Linear(**args)
+		else:
+			self.layer_mean = chainer.links.Linear(**args)
+		# ln_var
+		if hasattr(self, "_initialW_ln_var"):
+			args["initialW"] = getattr(self, "_initialW_ln_var")
+		if self.use_weightnorm:
+			self.layer_ln_var = weightnorm.Linear(**args)
+		else:
+			self.layer_ln_var = chainer.links.Linear(**args)
+		return self
+		
+	def __call__(self, x):
+		return self.layer_mean(x), self.layer_ln_var(x)
+
 class LSTM(Link):
 	def __init__(self, in_size, out_size):
 		self._link = "LSTM"
@@ -175,9 +241,6 @@ class LSTM(Link):
 			args["forget_bias_init"] = self._forget_bias_init
 		return chainer.links.GRU(**args)
 
-	def has_multiple_weights(self):
-		return True
-
 class StatelessLSTM(Link):
 	def __init__(self, in_size, out_size):
 		self._link = "StatelessLSTM"
@@ -191,9 +254,6 @@ class StatelessLSTM(Link):
 		if hasattr(self, "_upward_init"):
 			args["upward_init"] = self._upward_init
 		return chainer.links.GRU(**args)
-
-	def has_multiple_weights(self):
-		return True
 
 class StatefulGRU(Link):
 	def __init__(self, in_size, out_size, bias_init=0):
@@ -209,9 +269,6 @@ class StatefulGRU(Link):
 		if hasattr(self, "_inner_init"):
 			args["inner_init"] = self._inner_init
 		return chainer.links.GRU(**args)
-
-	def has_multiple_weights(self):
-		return True
 
 class StatefulPeepholeLSTM(Link):
 	def __init__(self, in_size, out_size):
@@ -243,3 +300,32 @@ class BatchNormalization(Link):
 		elif args["dtype"] == "float16":
 			args["dtype"] = numpy.float16
 		return chainer.links.BatchNormalization(**args)
+
+class MinibatchDiscrimination(Link):
+	def __init__(self, in_size, num_kernels, ndim_kernel=5):
+		self._link = "MinibatchDiscrimination"
+		self.in_size = in_size
+		self.num_kernels = num_kernels
+		self.ndim_kernel = ndim_kernel
+
+	def to_link(self):
+		args = {}
+		if hasattr(self, "_initialW"):
+			args["initialW"] = self._initialW
+		self.T = chainer.links.Linear(self.in_size, self.num_kernels * self.ndim_kernel, **args)
+		return self
+
+	def __call__(self, x):
+		xp = chainer.cuda.get_array_module(x.data)
+		batchsize = x.shape[0]
+
+		M = F.reshape(self.T(x), (-1, self.num_kernels, self.ndim_kernel))
+		M = F.expand_dims(M, 3)
+		M_T = F.transpose(M, (3, 1, 2, 0))
+		M, M_T = F.broadcast(M, M_T)
+
+		norm = F.sum(abs(M - M_T), axis=2)
+		eraser = F.broadcast_to(xp.eye(batchsize, dtype=x.dtype).reshape((batchsize, 1, batchsize)), norm.shape)
+		c_b = F.exp(-(norm + 1e6 * eraser))
+		o_b = F.sum(c_b, axis=2)
+		return F.concat((x, o_b), axis=1)
