@@ -17,9 +17,6 @@ class Function(object):
 			dict[attr] = value
 		return dict
 
-class ActivationFunction(Function):
-	pass
-
 class Activation(object):
 	def __init__(self, nonlinearity="relu"):
 		self.nonlinearity = nonlinearity
@@ -47,7 +44,7 @@ class Activation(object):
 			return tanh()
 		raise NotImplementedError()
 
-class clipped_relu(ActivationFunction):
+class clipped_relu(Function):
 	def __init__(self, z=20.0):
 		self._function = "clipped_relu"
 		self.z = z
@@ -55,7 +52,7 @@ class clipped_relu(ActivationFunction):
 	def __call__(self, x):
 		return F.clipped_relu(x, self.z)
 
-class crelu(ActivationFunction):
+class crelu(Function):
 	def __init__(self, axis=1):
 		self._function = "crelu"
 		self.axis = axis
@@ -63,7 +60,7 @@ class crelu(ActivationFunction):
 	def __call__(self, x):
 		return F.crelu(x, self.axis)
 
-class elu(ActivationFunction):
+class elu(Function):
 	def __init__(self, alpha=1.0):
 		self._function = "elu"
 		self.alpha = alpha
@@ -71,7 +68,7 @@ class elu(ActivationFunction):
 	def __call__(self, x):
 		return F.elu(x, self.alpha)
 
-class hard_sigmoid(ActivationFunction):
+class hard_sigmoid(Function):
 	def __init__(self):
 		self._function = "hard_sigmoid"
 		pass
@@ -79,7 +76,7 @@ class hard_sigmoid(ActivationFunction):
 	def __call__(self, x):
 		return F.hard_sigmoid(x)
 
-class leaky_relu(ActivationFunction):
+class leaky_relu(Function):
 	def __init__(self, slope=0.2):
 		self._function = "leaky_relu"
 		self.slope = slope
@@ -104,7 +101,7 @@ class maxout(Function):
 	def __call__(self, x):
 		return F.maxout(x, self.pool_size, self.axis)
 
-class relu(ActivationFunction):
+class relu(Function):
 	def __init__(self, use_cudnn=True):
 		self._function = "relu"
 		self.use_cudnn = use_cudnn
@@ -112,7 +109,7 @@ class relu(ActivationFunction):
 	def __call__(self, x):
 		return F.relu(x, self.use_cudnn)
 
-class sigmoid(ActivationFunction):
+class sigmoid(Function):
 	def __init__(self, use_cudnn=True):
 		self._function = "sigmoid"
 		self.use_cudnn = use_cudnn
@@ -128,7 +125,7 @@ class softmax(Function):
 	def __call__(self, x):
 		return F.softmax(x, self.use_cudnn)
 
-class softplus(ActivationFunction):
+class softplus(Function):
 	def __init__(self, use_cudnn=True):
 		self._function = "softplus"
 		self.use_cudnn = use_cudnn
@@ -136,7 +133,7 @@ class softplus(ActivationFunction):
 	def __call__(self, x):
 		return F.softplus(x, self.use_cudnn)
 
-class tanh(ActivationFunction):
+class tanh(Function):
 	def __init__(self, use_cudnn=True):
 		self._function = "tanh"
 		self.use_cudnn = use_cudnn
