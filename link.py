@@ -310,7 +310,9 @@ class MinibatchDiscrimination(Link):
 		self.ndim_kernel = ndim_kernel
 
 	def to_link(self):
-		args = {}
+		args = {
+			"nobias": True
+		}
 		if hasattr(self, "_initialW"):
 			args["initialW"] = self._initialW
 		self.T = chainer.links.Linear(self.in_size, self.num_kernels * self.ndim_kernel, **args)
