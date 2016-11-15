@@ -1,11 +1,11 @@
 import numpy as np
 import os, time, math, collections, six
-import sequential
-from link import _Merge, MinibatchDiscrimination, Gaussian
 import chainer
 from chainer import optimizers, serializers, Variable
 from chainer import cuda
 from chainer import optimizer
+import sequential
+import links
 
 def sum_sqnorm(arr):
 	sq_sum = collections.defaultdict(float)
@@ -125,20 +125,23 @@ def get_optimizer(name, lr, momentum=0.9):
 class Chain(chainer.Chain):
 
 	def add_sequence(self, sequence):
+		self.add_sequence_with_name(sequence)
+		self.sequence = sequence
+
+	def add_sequence_with_name(self, sequence, name="link"):
 		if isinstance(sequence, sequential.Sequential) == False:
 			raise Exception()
 		for i, link in enumerate(sequence.links):
 			if isinstance(link, chainer.link.Link):
-				self.add_link("link_{}".format(i), link)
-			elif isinstance(link, Gaussian):
-				self.add_link("link_{}_ln_var".format(i), link.layer_ln_var)
-				self.add_link("link_{}_mean".format(i), link.layer_mean)
-			elif isinstance(link, MinibatchDiscrimination):
-				self.add_link("link_{}".format(i), link.T)
-			elif isinstance(link, _Merge):
+				self.add_link("{}_{}".format(name, i), link)
+			elif isinstance(link, links.Gaussian):
+				self.add_link("{}_{}_ln_var".format(name, i), link.layer_ln_var)
+				self.add_link("{}_{}_mean".format(name, i), link.layer_mean)
+			elif isinstance(link, links.MinibatchDiscrimination):
+				self.add_link("{}_{}".format(name, i), link.T)
+			elif isinstance(link, links.Merge):
 				for l, layer in enumerate(link.merge_layers):
-					self.add_link("link_{}_{}".format(i, l), layer)
-		self.sequence = sequence
+					self.add_link("{}_{}_{}".format(name, i, l), layer)
 
 	def load(self, filename):
 		if os.path.isfile(filename):
@@ -173,7 +176,6 @@ class Chain(chainer.Chain):
 			self.optimizer.update(lossfun=lambda: loss)
 		else:
 			self.optimizer.update(lossfun=loss)
-			
 
 	def __call__(self, *args, **kwargs):
 		return self.sequence(*args, **kwargs)

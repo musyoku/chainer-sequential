@@ -8,8 +8,8 @@ Chainerのネットワーク構造をKerasのように書きたいという思�
 ## Usage
 
 ```
-from link import Linear, BatchNormalization
-from function import Activation
+from layers import Linear, BatchNormalization
+from functions import Activation
 from chain import Chain
 
 x = np.random.normal(scale=1, size=(128, 28*28)).astype(np.float32)
@@ -60,33 +60,33 @@ model.from_json(json_str)
 ## Adding activation function
 
 ```
-model.add(function.Activation("relu"))
+model.add(functions.Activation("relu"))
 ```
 
 or
 
 ```
-model.add(function.relu())
+model.add(functions.relu())
 ```
 
 ## Dropout
 
 ```
-model.add(function.dropout())
+model.add(functions.dropout())
 ```
 
 ## Adding gaussian noise
 
 ```
-model.add(function.gaussian_noise(std=0.5))
+model.add(functions.gaussian_noise(std=0.5))
 ```
 
 ## Weight Normalization
 
 ```
-model.add(link.Linear(500, 500, use_weightnorm=True))
-model.add(link.Convolution2D(64, 128, ksize=4, stride=2, pad=0, use_weightnorm=True))
-model.add(link.Deconvolution2D(64, 32, ksize=4, stride=2, pad=1, use_weightnorm=True))
+model.add(layers.Linear(500, 500, use_weightnorm=True))
+model.add(layers.Convolution2D(64, 128, ksize=4, stride=2, pad=0, use_weightnorm=True))
+model.add(layers.Deconvolution2D(64, 32, ksize=4, stride=2, pad=1, use_weightnorm=True))
 ```
 
 ## Initializing weights
@@ -100,15 +100,15 @@ model = Sequential(weight_initializer="HeNormal", weight_init_std=0.05)
 ## Minibatch Discrimination
 
 ```
-model.add(link.Convolution2D(256, 1024, ksize=4, stride=2, pad=1))
-model.add(function.reshape_1d())
-model.add(link.MinibatchDiscrimination(None, num_kernels=50, ndim_kernel=5))
+model.add(layers.Convolution2D(256, 1024, ksize=4, stride=2, pad=1))
+model.add(functions.reshape_1d())
+model.add(layers.MinibatchDiscrimination(None, num_kernels=50, ndim_kernel=5))
 ```
 
 ## Merge inputs
 
 ```
-model.add(link.Merge(num_inputs=2, out_size=500))
+model.add(layers.Merge(num_inputs=2, out_size=500))
 ...
 x = ...
 y = ...

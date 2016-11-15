@@ -1,7 +1,7 @@
 import copy, json, types
 import chainer
-import link
-import function
+import layers
+import functions
 
 class Sequential(object):
 	def __init__(self, weight_initializer="Normal", weight_init_std=1):
@@ -12,22 +12,22 @@ class Sequential(object):
 		self.weight_init_std = weight_init_std
 
 	def add(self, layer):
-		if isinstance(layer, link.Link) or isinstance(layer, function.Function):
+		if isinstance(layer, layers.Layer) or isinstance(layer, functions.Function):
 			self._layers.append(layer)
-		elif isinstance(layer, function.Activation):
+		elif isinstance(layer, functions.Activation):
 			self._layers.append(layer.to_function())
 		else:
 			raise Exception()
 
 	def layer_from_dict(self, dict):
-		if "_link" in dict:
-			if hasattr(link, dict["_link"]):
+		if "_layer" in dict:
+			if hasattr(layers, dict["_layer"]):
 				args = self.dict_to_layer_init_args(dict)
-				return getattr(link, dict["_link"])(**args)
+				return getattr(layers, dict["_layer"])(**args)
 		if "_function" in dict:
-			if hasattr(function, dict["_function"]):
+			if hasattr(functions, dict["_function"]):
 				args = self.dict_to_layer_init_args(dict)
-				return getattr(function, dict["_function"])(**args)
+				return getattr(functions, dict["_function"])(**args)
 		raise Exception()
 
 	def dict_to_layer_init_args(self, dict):
@@ -50,25 +50,25 @@ class Sequential(object):
 		raise Exception()
 
 	def layer_to_chainer_link(self, layer):
-		if hasattr(layer, "_link"):
-			if isinstance(layer, link.GRU):
+		if hasattr(layer, "_layer"):
+			if isinstance(layer, layers.GRU):
 				layer._init = self.get_weight_initializer()
 				layer._inner_init = self.get_weight_initializer()
-			elif isinstance(layer, link.LSTM):
+			elif isinstance(layer, layers.LSTM):
 				layer._lateral_init  = self.get_weight_initializer()
 				layer._upward_init  = self.get_weight_initializer()
 				layer._bias_init = self.get_weight_initializer()
 				layer._forget_bias_init = self.get_weight_initializer()
-			elif isinstance(layer, link.StatelessLSTM):
+			elif isinstance(layer, layers.StatelessLSTM):
 				layer._lateral_init  = self.get_weight_initializer()
 				layer._upward_init  = self.get_weight_initializer()
-			elif isinstance(layer, link.StatefulGRU):
+			elif isinstance(layer, layers.StatefulGRU):
 				layer._init = self.get_weight_initializer()
 				layer._inner_init = self.get_weight_initializer()
-			elif isinstance(layer, link.Gaussian):
+			elif isinstance(layer, layers.Gaussian):
 				layer._initialW_mean = self.get_weight_initializer()
 				layer._initialW_ln_var = self.get_weight_initializer()
-			elif isinstance(layer, link.Merge):
+			elif isinstance(layer, layers.Merge):
 				for i in xrange(layer.num_inputs):
 					setattr(layer, "_initialW_%d" % i, self.get_weight_initializer())
 			else:
@@ -122,7 +122,7 @@ class Sequential(object):
 		if "test" not in kwargs:
 			kwargs["test"] = False
 		for func in self.links:
-			if isinstance(func, function.dropout):
+			if isinstance(func, functions.dropout):
 				x = func(args[0] if x is None else x, train=not kwargs["test"])
 			elif isinstance(func, chainer.links.BatchNormalization):
 				x = func(args[0] if x is None else x, test=kwargs["test"])
