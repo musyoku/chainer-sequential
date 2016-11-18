@@ -171,11 +171,13 @@ class Merge(Layer):
 			args = self.to_chainer_args()
 			del args["use_weightnorm"]
 			del args["num_inputs"]
-			if hasattr(self, "_initialW_%d" % i):
-				args["initialW"] = getattr(self, "_initialW_%d" % i)
 			if self.use_weightnorm:
+				if hasattr(self, "_initialW"):
+					args["initialV"] = self._initialW
 				merge_layer = weightnorm.Linear(None, **args)
 			else:
+				if hasattr(self, "_initialW_%d" % i):
+					args["initialW"] = getattr(self, "_initialW_%d" % i)
 				merge_layer = chainer.links.Linear(None, **args)
 			link.append_layer(merge_layer)
 		return link
@@ -288,20 +290,14 @@ class BatchNormalization(Layer):
 		return chainer.links.BatchNormalization(**args)
 
 class MinibatchDiscrimination(Layer):
-	def __init__(self, in_size, num_kernels, ndim_kernel=5, train_weights=True):
+	def __init__(self, in_size, num_kernels, ndim_kernel=5):
 		self._layer = "MinibatchDiscrimination"
 		self.in_size = in_size
 		self.num_kernels = num_kernels
 		self.ndim_kernel = ndim_kernel
-		self.train_weights = train_weights
 
 	def to_link(self):
 		args = {}
 		if hasattr(self, "_initialW"):
 			args["initialW"] = self._initialW
-		return links.MinibatchDiscrimination(
-			chainer.links.Linear(self.in_size, self.num_kernels * self.ndim_kernel, **args), 
-			self.num_kernels,
-			self.ndim_kernel,
-			self.train_weights
-		)
+		return links.MinibatchDiscrimination(chainer.links.Linear(self.in_size, self.num_kernels * self.ndim_kernel, **args))
