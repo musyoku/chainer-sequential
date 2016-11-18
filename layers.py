@@ -290,14 +290,20 @@ class BatchNormalization(Layer):
 		return chainer.links.BatchNormalization(**args)
 
 class MinibatchDiscrimination(Layer):
-	def __init__(self, in_size, num_kernels, ndim_kernel=5):
+	def __init__(self, in_size, num_kernels, ndim_kernel=5, train_weights=True):
 		self._layer = "MinibatchDiscrimination"
 		self.in_size = in_size
 		self.num_kernels = num_kernels
 		self.ndim_kernel = ndim_kernel
+		self.train_weights = train_weights
 
 	def to_link(self):
 		args = {}
 		if hasattr(self, "_initialW"):
 			args["initialW"] = self._initialW
-		return links.MinibatchDiscrimination(chainer.links.Linear(self.in_size, self.num_kernels * self.ndim_kernel, **args))
+		return links.MinibatchDiscrimination(
+			chainer.links.Linear(self.in_size, self.num_kernels * self.ndim_kernel, **args), 
+			self.num_kernels,
+			self.ndim_kernel,
+			self.train_weights
+		)
