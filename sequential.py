@@ -119,21 +119,18 @@ class Sequential(object):
 
 	def __call__(self, *args, **kwargs):
 		x = None
-		activations = []
 		if "test" not in kwargs:
 			kwargs["test"] = False
-		for link in self.links:
-			if isinstance(link, functions.dropout):
-				x = link(args[0] if x is None else x, train=not kwargs["test"])
-			elif isinstance(link, chainer.links.BatchNormalization):
-				x = link(args[0] if x is None else x, test=kwargs["test"])
+		for func in self.links:
+			if isinstance(func, functions.dropout):
+				x = func(args[0] if x is None else x, train=not kwargs["test"])
+			elif isinstance(func, chainer.links.BatchNormalization):
+				x = func(args[0] if x is None else x, test=kwargs["test"])
+			elif isinstance(func, functions.gaussian_noise):
+				x = func(args[0] if x is None else x, test=kwargs["test"])
 			else:
 				if x is None:
-					x = link(*args)
+					x = func(*args)
 				else:
-					x = link(x)
-					if isinstance(link, functions.ActivationFunction):
-						activations.append(x)
-		if "return_activations" in kwargs and kwargs["return_activations"] == True:
-			return x, activations
+					x = func(x)
 		return x
