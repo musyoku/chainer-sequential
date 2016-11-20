@@ -24,14 +24,13 @@ class GradientClipping(object):
 
 	def __call__(self, opt):
 		norm = np.sqrt(sum_sqnorm([p.grad for p in opt.target.params()]))
-		if norm == 0:
+		if norm < self.threshold:
 			return
 		rate = self.threshold / norm
-		if rate < 1:
-			for param in opt.target.params():
-				grad = param.grad
-				with cuda.get_device(grad):
-					grad *= rate
+		for param in opt.target.params():
+			grad = param.grad
+			with cuda.get_device(grad):
+				grad *= rate
 
 class Eve(optimizer.GradientMethod):
 	def __init__(self, alpha=0.001, beta1=0.9, beta2=0.999, beta3=0.999, eps=1e-8, lower_threshold=0.1, upper_threshold=10):
