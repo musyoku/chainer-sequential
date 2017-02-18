@@ -116,9 +116,9 @@ class Sequential(object):
 		for i, layer_dict in enumerate(dict["layers"]):
 			layer = self.layer_from_dict(layer_dict)
 			self.layers.append(layer)
-		self.build(weight_initializer, weight_std)
 
 	def __call__(self, *args, **kwargs):
+		assert self.built == True
 		x = None
 		activations = []
 		if "test" not in kwargs:

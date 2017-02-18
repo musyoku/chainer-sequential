@@ -7,6 +7,16 @@ import functions
 import util
 from chain import Chain
 
+# JSON test
+seq1 = Sequential()
+seq1.add(layers.Linear(28*28, 500))
+seq1.add(layers.BatchNormalization(500))
+seq1.add(functions.relu())
+json_str = seq1.to_json()
+seq2 = Sequential()
+seq2.from_json(json_str)
+seq2.build("HeNormal", 0.1)
+
 # Linear test
 x = np.random.normal(scale=1, size=(2, 28*28)).astype(np.float32)
 x = Variable(x)
@@ -93,6 +103,8 @@ seq.add(layers.Deconvolution2D(32, 16, ksize=4, stride=2, pad=paddings.pop(0), u
 seq.add(layers.BatchNormalization(16))
 seq.add(functions.Activation("relu"))
 seq.add(layers.Deconvolution2D(16, 3, ksize=4, stride=2, pad=paddings.pop(0), use_weightnorm=True))
+json_str = seq.to_json()
+seq.from_json(json_str)
 seq.build("HeNormal", 0.1)
 
 y = seq(x)
@@ -150,7 +162,7 @@ for link in chain.seq2.links:
 for link in chain.seq3.links:
 	print np.std(link.W.data), np.mean(link.W.data)
 
-	
+
 seq1 = Sequential(weight_std=1.0)
 seq1.add(layers.Linear(28*28, 500))
 

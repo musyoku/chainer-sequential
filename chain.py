@@ -6,31 +6,7 @@ from chainer import cuda
 from chainer import optimizer
 import sequential
 import links
-
-def sum_sqnorm(arr):
-	sq_sum = collections.defaultdict(float)
-	for x in arr:
-		with cuda.get_device(x) as dev:
-			x = x.ravel()
-			s = x.dot(x)
-			sq_sum[int(dev)] += s
-	return sum([float(i) for i in six.itervalues(sq_sum)])
-	
-class GradientClipping(object):
-	name = "GradientClipping"
-
-	def __init__(self, threshold):
-		self.threshold = threshold
-
-	def __call__(self, opt):
-		norm = np.sqrt(sum_sqnorm([p.grad for p in opt.target.params()]))
-		if norm < self.threshold:
-			return
-		rate = self.threshold / norm
-		for param in opt.target.params():
-			grad = param.grad
-			with cuda.get_device(grad):
-				grad *= rate
+import hooks
 
 class Eve(optimizer.GradientMethod):
 	def __init__(self, alpha=0.001, beta1=0.9, beta2=0.999, beta3=0.999, eps=1e-8, lower_threshold=0.1, upper_threshold=10):
@@ -191,7 +167,7 @@ class Chain(chainer.Chain):
 		if weight_decay > 0:
 			opt.add_hook(chainer.optimizer.WeightDecay(weight_decay))
 		if gradient_clipping > 0:
-			opt.add_hook(GradientClipping(gradient_clipping))
+			opt.add_hook(hooks.GradientClipping(gradient_clipping))
 		self._optimizer = opt
 
 	def update_learning_rate(self, lr):
