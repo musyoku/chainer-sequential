@@ -5,13 +5,13 @@ import functions
 from chain import get_weight_initializer
 
 class Sequential(object):
-	def __init__(self, weight_initializer=None, weight_init_std=None):
+	def __init__(self, weight_initializer=None, weight_std=None):
 		self.layers = []
 		self.links = []
 		self.built = False
 
 		self.weight_initializer = weight_initializer	# Normal / GlorotNormal / HeNormal
-		self.weight_init_std = weight_init_std
+		self.weight_std = weight_std
 
 	def add(self, layer):
 		if isinstance(layer, layers.Layer) or isinstance(layer, functions.Function):
@@ -45,27 +45,27 @@ class Sequential(object):
 	def layer_to_chainer_link(self, layer):
 		if hasattr(layer, "_layer"):
 			if isinstance(layer, layers.GRU):
-				layer._init = get_weight_initializer(self.weight_initializer, self.weight_init_std)
-				layer._inner_init = get_weight_initializer(self.weight_initializer, self.weight_init_std)
+				layer._init = get_weight_initializer(self.weight_initializer, self.weight_std)
+				layer._inner_init = get_weight_initializer(self.weight_initializer, self.weight_std)
 			elif isinstance(layer, layers.LSTM):
-				layer._lateral_init  = get_weight_initializer(self.weight_initializer, self.weight_init_std)
-				layer._upward_init  = get_weight_initializer(self.weight_initializer, self.weight_init_std)
-				layer._bias_init = get_weight_initializer(self.weight_initializer, self.weight_init_std)
-				layer._forget_bias_init = get_weight_initializer(self.weight_initializer, self.weight_init_std)
+				layer._lateral_init  = get_weight_initializer(self.weight_initializer, self.weight_std)
+				layer._upward_init  = get_weight_initializer(self.weight_initializer, self.weight_std)
+				layer._bias_init = get_weight_initializer(self.weight_initializer, self.weight_std)
+				layer._forget_bias_init = get_weight_initializer(self.weight_initializer, self.weight_std)
 			elif isinstance(layer, layers.StatelessLSTM):
-				layer._lateral_init  = get_weight_initializer(self.weight_initializer, self.weight_init_std)
-				layer._upward_init  = get_weight_initializer(self.weight_initializer, self.weight_init_std)
+				layer._lateral_init  = get_weight_initializer(self.weight_initializer, self.weight_std)
+				layer._upward_init  = get_weight_initializer(self.weight_initializer, self.weight_std)
 			elif isinstance(layer, layers.StatefulGRU):
-				layer._init = get_weight_initializer(self.weight_initializer, self.weight_init_std)
-				layer._inner_init = get_weight_initializer(self.weight_initializer, self.weight_init_std)
+				layer._init = get_weight_initializer(self.weight_initializer, self.weight_std)
+				layer._inner_init = get_weight_initializer(self.weight_initializer, self.weight_std)
 			elif isinstance(layer, layers.Gaussian):
-				layer._initialW_mean = get_weight_initializer(self.weight_initializer, self.weight_init_std)
-				layer._initialW_ln_var = get_weight_initializer(self.weight_initializer, self.weight_init_std)
+				layer._initialW_mean = get_weight_initializer(self.weight_initializer, self.weight_std)
+				layer._initialW_ln_var = get_weight_initializer(self.weight_initializer, self.weight_std)
 			elif isinstance(layer, layers.Merge):
 				for i in xrange(layer.num_inputs):
-					setattr(layer, "_initialW_%d" % i, get_weight_initializer(self.weight_initializer, self.weight_init_std))
+					setattr(layer, "_initialW_%d" % i, get_weight_initializer(self.weight_initializer, self.weight_std))
 			else:
-				layer._initialW = get_weight_initializer(self.weight_initializer, self.weight_init_std)
+				layer._initialW = get_weight_initializer(self.weight_initializer, self.weight_std)
 			return layer.to_link()
 		if hasattr(layer, "_function"):
 			return layer
@@ -77,7 +77,7 @@ class Sequential(object):
 		if new_weight_initializer is not None:
 			self.weight_initializer = new_weight_initializer
 		if new_weight_init_std is not None:
-			self.weight_init_std = new_weight_init_std
+			self.weight_std = new_weight_init_std
 		# convert layers to Chainer Link objects
 		for i, layer in enumerate(self.layers):
 			link = self.layer_to_chainer_link(layer)
@@ -96,7 +96,7 @@ class Sequential(object):
 		return {
 			"layers": layers,
 			"weight_initializer": self.weight_initializer,
-			"weight_init_std": self.weight_init_std
+			"weight_std": self.weight_std
 		}
 
 	def to_json(self):
@@ -112,11 +112,11 @@ class Sequential(object):
 
 	def from_dict(self, dict):
 		weight_initializer = dict["weight_initializer"]
-		weight_init_std = dict["weight_init_std"]
+		weight_std = dict["weight_std"]
 		for i, layer_dict in enumerate(dict["layers"]):
 			layer = self.layer_from_dict(layer_dict)
 			self.layers.append(layer)
-		self.build(weight_initializer, weight_init_std)
+		self.build(weight_initializer, weight_std)
 
 	def __call__(self, *args, **kwargs):
 		x = None

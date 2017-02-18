@@ -103,14 +103,14 @@ class Eve(optimizer.GradientMethod):
 		self.loss = float(loss_var.data)
 		super(Eve, self).update(lossfun=lambda: loss_var)
 
-def get_weight_initializer(weight_initializer, weight_init_std):
+def get_weight_initializer(weight_initializer, weight_std):
 	assert weight_initializer is not None
 	if weight_initializer.lower() == "normal":
-		return chainer.initializers.Normal(weight_init_std)
+		return chainer.initializers.Normal(weight_std)
 	if weight_initializer.lower() == "glorotnormal":
-		return chainer.initializers.GlorotNormal(weight_init_std)
+		return chainer.initializers.GlorotNormal(weight_std)
 	if weight_initializer.lower() == "henormal":
-		return chainer.initializers.HeNormal(weight_init_std)
+		return chainer.initializers.HeNormal(weight_std)
 	raise Exception()
 
 def get_optimizer(name, lr, momentum=0.9):
@@ -133,17 +133,17 @@ def get_optimizer(name, lr, momentum=0.9):
 	raise Exception()
 
 class Chain(chainer.Chain):
-	def __init__(self, weight_initializer="Normal", weight_init_std=1):
+	def __init__(self, weight_initializer="Normal", weight_std=1):
 		super(Chain, self).__init__()
 		self.global_weight_initializer = weight_initializer	# Normal / GlorotNormal / HeNormal
-		self.global_weight_init_std = weight_init_std
+		self.global_weight_std = weight_std
 
 	def build_sequence(self, sequence):
 		if sequence.built == False:
 			if sequence.weight_initializer is None:
 				sequence.weight_initializer = self.global_weight_initializer
-			if sequence.weight_init_std is None:
-				sequence.weight_init_std = self.global_weight_init_std
+			if sequence.weight_std is None:
+				sequence.weight_std = self.global_weight_std
 			sequence.build()
 
 	def add_sequence(self, sequence, name=None):
@@ -151,10 +151,11 @@ class Chain(chainer.Chain):
 		self.build_sequence(sequence)
 		self.add_sequence_with_name(sequence, name)
 		if name is None:
+			assert hasattr(self, "sequence") == False
 			self.sequence = sequence
 		else:
-			if hasattr(self, name) == False:
-				setattr(self, name, sequence)
+			assert hasattr(self, name) == False
+			setattr(self, name, sequence)
 
 	def add_sequence_with_name(self, sequence, name="link"):
 		assert isinstance(sequence, sequential.Sequential)

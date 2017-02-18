@@ -15,7 +15,7 @@ from chain import Chain
 x = np.random.normal(scale=1, size=(128, 28*28)).astype(np.float32)
 x = Variable(x)
 
-model = Sequential(weight_initializer="GlorotNormal", weight_init_std=0.05)
+model = Sequential()
 model.add(Linear(28*28, 500, use_weightnorm=True))
 model.add(BatchNormalization(500))
 model.add(Activation("relu"))
@@ -23,7 +23,7 @@ model.add(Linear(None, 500, use_weightnorm=True))
 model.add(BatchNormalization(500))
 model.add(Activation("relu"))
 model.add(Linear(500, 28*28, use_weightnorm=True))
-model.build()
+model.build(weight_initializer="GlorotNormal", weight_std=0.05)
 
 chain = Chain()
 chain.add_sequence(model)
@@ -43,7 +43,7 @@ chain.save("model")
 ```
 model = Sequential()
 ...
-model.build()
+model.build("Normal", 1.0)
 
 for i, link in enumerate(model.links):
 	if isinstance(link, chainer.link.Link):
@@ -92,9 +92,9 @@ model.add(layers.Deconvolution2D(64, 32, ksize=4, stride=2, pad=1, use_weightnor
 ## Initializing weights
 
 ```
-model = Sequential(weight_initializer="Normal", weight_init_std=0.05)
-model = Sequential(weight_initializer="GlorotNormal", weight_init_std=0.05)
-model = Sequential(weight_initializer="HeNormal", weight_init_std=0.05)
+model.build(weight_initializer="Normal", weight_std=1.0)
+model.build(weight_initializer="GlorotNormal", weight_std=0.5)
+model.build(weight_initializer="HeNormal", weight_std=0.1)
 ```
 
 ## Minibatch Discrimination
@@ -109,7 +109,7 @@ model.add(layers.MinibatchDiscrimination(None, num_kernels=50, ndim_kernel=5))
 
 ```
 model.add(layers.Merge(num_inputs=2, out_size=500))
-...
+model.build("Normal", 1.0)
 x = ...
 y = ...
 output = model(x, y)
@@ -131,7 +131,7 @@ disciminator.add(Convolution2D(128, 256, ksize=4, stride=2, pad=1))
 disciminator.add(Activation("elu"))
 disciminator.add(Linear(None, 1))
 disciminator.add(sigmoid())
-disciminator.build()
+disciminator.build("Normal", 0.1)
 
 # compute projection width
 projection_width = util.get_in_size_of_deconv_layers(image_width, num_layers=3, ksize=4, stride=2)
@@ -151,5 +151,63 @@ generator.add(Deconvolution2D(32, 16, ksize=4, stride=2, pad=paddings.pop(0)))
 generator.add(BatchNormalization(16))
 generator.add(Activation("relu"))
 generator.add(Deconvolution2D(16, 3, ksize=4, stride=2, pad=paddings.pop(0)))
-generator.build()
+generator.build("Normal", 1.0)
+```
+
+## Using the same initializer for all sequences
+
+Add all sequence to chain without calling `build`.
+
+```
+seq1 = Sequential()
+seq1.add(layers.Linear(28*28, 500))
+
+seq2 = Sequential()
+seq2.add(layers.Linear(28*28, 500))
+
+seq3 = Sequential()
+seq3.add(layers.Linear(28*28, 500))
+
+chain = Chain("Normal", 1.0)
+chain.add_sequence(seq1, name="seq1")
+chain.add_sequence(seq2, name="seq2")
+chain.add_sequence(seq3, name="seq3")
+
+# check
+for link in chain.seq1.links:
+	print np.std(link.W.data), np.mean(link.W.data)
+
+for link in chain.seq2.links:
+	print np.std(link.W.data), np.mean(link.W.data)
+
+for link in chain.seq3.links:
+	print np.std(link.W.data), np.mean(link.W.data)
+```
+
+To set the initial std of weights to different values,
+
+```
+seq1 = Sequential(weight_std=1.0)
+seq1.add(layers.Linear(28*28, 500))
+
+seq2 = Sequential(weight_std=0.1)
+seq2.add(layers.Linear(28*28, 500))
+
+seq3 = Sequential(weight_std=0.01)
+seq3.add(layers.Linear(28*28, 500))
+
+chain = Chain("Normal", 1.0)
+chain.add_sequence(seq1, name="seq1")
+chain.add_sequence(seq2, name="seq2")
+chain.add_sequence(seq3, name="seq3")
+
+# check
+for link in chain.seq1.links:
+	print np.std(link.W.data), np.mean(link.W.data)
+
+for link in chain.seq2.links:
+	print np.std(link.W.data), np.mean(link.W.data)
+
+for link in chain.seq3.links:
+	print np.std(link.W.data), np.mean(link.W.data)
 ```

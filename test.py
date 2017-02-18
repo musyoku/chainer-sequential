@@ -137,15 +137,40 @@ seq3 = Sequential()
 seq3.add(layers.Linear(28*28, 500))
 
 chain = Chain("HeNormal", 0.1)
-chain.add_sequence(seq1, name="1")
-chain.add_sequence(seq2, name="2")
-chain.add_sequence(seq3, name="3")
+chain.add_sequence(seq1, name="seq1")
+chain.add_sequence(seq2, name="seq2")
+chain.add_sequence(seq3, name="seq3")
 
-for link in seq1.links:
+for link in chain.seq1.links:
 	print np.std(link.W.data), np.mean(link.W.data)
 
-for link in seq2.links:
+for link in chain.seq2.links:
 	print np.std(link.W.data), np.mean(link.W.data)
 
-for link in seq3.links:
+for link in chain.seq3.links:
+	print np.std(link.W.data), np.mean(link.W.data)
+
+	
+seq1 = Sequential(weight_std=1.0)
+seq1.add(layers.Linear(28*28, 500))
+
+seq2 = Sequential(weight_std=0.1)
+seq2.add(layers.Linear(28*28, 500))
+
+seq3 = Sequential(weight_std=0.01)
+seq3.add(layers.Linear(28*28, 500))
+
+chain = Chain("Normal", 1.0)
+chain.add_sequence(seq1, name="seq1")
+chain.add_sequence(seq2, name="seq2")
+chain.add_sequence(seq3, name="seq3")
+
+# check
+for link in chain.seq1.links:
+	print np.std(link.W.data), np.mean(link.W.data)
+
+for link in chain.seq2.links:
+	print np.std(link.W.data), np.mean(link.W.data)
+
+for link in chain.seq3.links:
 	print np.std(link.W.data), np.mean(link.W.data)
