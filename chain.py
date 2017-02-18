@@ -7,6 +7,7 @@ from chainer import optimizer
 import sequential
 import links
 import hooks
+import util
 
 class Eve(optimizer.GradientMethod):
 	def __init__(self, alpha=0.001, beta1=0.9, beta2=0.999, beta3=0.999, eps=1e-8, lower_threshold=0.1, upper_threshold=10):
@@ -79,35 +80,6 @@ class Eve(optimizer.GradientMethod):
 		self.loss = float(loss_var.data)
 		super(Eve, self).update(lossfun=lambda: loss_var)
 
-def get_weight_initializer(weight_initializer, weight_std):
-	assert weight_initializer is not None
-	if weight_initializer.lower() == "normal":
-		return chainer.initializers.Normal(weight_std)
-	if weight_initializer.lower() == "glorotnormal":
-		return chainer.initializers.GlorotNormal(weight_std)
-	if weight_initializer.lower() == "henormal":
-		return chainer.initializers.HeNormal(weight_std)
-	raise Exception()
-
-def get_optimizer(name, lr, momentum=0.9):
-	if name.lower() == "adam":
-		return optimizers.Adam(alpha=lr, beta1=momentum)
-	if name.lower() == "eve":
-		return Eve(alpha=lr, beta1=momentum)
-	if name.lower() == "adagrad":
-		return optimizers.AdaGrad(lr=lr)
-	if name.lower() == "adadelta":
-		return optimizers.AdaDelta(rho=momentum)
-	if name.lower() == "nesterov" or name.lower() == "nesterovag":
-		return optimizers.NesterovAG(lr=lr, momentum=momentum)
-	if name.lower() == "rmsprop":
-		return optimizers.RMSprop(lr=lr, alpha=momentum)
-	if name.lower() == "momentumsgd":
-		return optimizers.MomentumSGD(lr=lr, mommentum=mommentum)
-	if name.lower() == "sgd":
-		return optimizers.SGD(lr=lr)
-	raise Exception()
-
 class Chain(chainer.Chain):
 	def __init__(self, weight_initializer="Normal", weight_std=1):
 		super(Chain, self).__init__()
@@ -162,7 +134,7 @@ class Chain(chainer.Chain):
 		serializers.save_hdf5(filename, self)
 
 	def setup_optimizers(self, optimizer_name, lr, momentum=0.9, weight_decay=0, gradient_clipping=0):
-		opt = get_optimizer(optimizer_name, lr, momentum)
+		opt = util.get_optimizer(optimizer_name, lr, momentum)
 		opt.setup(self)
 		if weight_decay > 0:
 			opt.add_hook(chainer.optimizer.WeightDecay(weight_decay))

@@ -1,3 +1,35 @@
+import chainer
+
+def get_weight_initializer(weight_initializer, weight_std):
+	assert weight_initializer is not None
+	if weight_initializer.lower() == "normal":
+		return chainer.initializers.Normal(weight_std)
+	if weight_initializer.lower() == "glorotnormal":
+		return chainer.initializers.GlorotNormal(weight_std)
+	if weight_initializer.lower() == "henormal":
+		return chainer.initializers.HeNormal(weight_std)
+	raise Exception()
+
+def get_optimizer(name, lr, momentum=0.9):
+	if name.lower() == "adam":
+		return chainer.optimizers.Adam(alpha=lr, beta1=momentum)
+	if name.lower() == "eve":
+		return Eve(alpha=lr, beta1=momentum)
+	if name.lower() == "adagrad":
+		return chainer.optimizers.AdaGrad(lr=lr)
+	if name.lower() == "adadelta":
+		return chainer.optimizers.AdaDelta(rho=momentum)
+	if name.lower() == "nesterov" or name.lower() == "nesterovag":
+		return chainer.optimizers.NesterovAG(lr=lr, momentum=momentum)
+	if name.lower() == "rmsprop":
+		return chainer.optimizers.RMSprop(lr=lr, alpha=momentum)
+	if name.lower() == "momentumsgd":
+		return chainer.optimizers.MomentumSGD(lr=lr, mommentum=mommentum)
+	if name.lower() == "sgd":
+		return chainer.optimizers.SGD(lr=lr)
+	raise Exception()
+
+
 def get_conv_outsize(in_size, ksize, stride, padding, cover_all=False, d=1):
 	dk = ksize + (ksize - 1) * (d - 1)
 	if cover_all:

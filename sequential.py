@@ -2,7 +2,7 @@ import copy, json, types
 import chainer
 import layers
 import functions
-from chain import get_weight_initializer
+from util import get_weight_initializer
 
 class Sequential(object):
 	def __init__(self, weight_initializer=None, weight_std=None):
