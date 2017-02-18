@@ -35,9 +35,9 @@ def get_paddings_of_deconv_layers(target_size, num_layers, ksize, stride):
 	# compute required deconv paddings
 	paddings = []
 	deconv_out_sizes = [target_size]
-	deconv_out_sizes.append(get_conv_outsize(deconv_out_sizes[-1], ksize, stride, get_conv_padding(deconv_out_sizes[-1], ksize, stride)))
-	deconv_out_sizes.append(get_conv_outsize(deconv_out_sizes[-1], ksize, stride, get_conv_padding(deconv_out_sizes[-1], ksize, stride)))
-	deconv_out_sizes.append(get_conv_outsize(deconv_out_sizes[-1], ksize, stride, get_conv_padding(deconv_out_sizes[-1], ksize, stride)))
+	for i in xrange(num_layers):
+		deconv_out_sizes.append(get_conv_outsize(deconv_out_sizes[-1], ksize, stride, get_conv_padding(deconv_out_sizes[-1], ksize, stride)))
+		
 	# target_size of hidden layer must be an even number
 	for i, size in enumerate(deconv_out_sizes[1:-1]):
 		if size % 2 == 1:
@@ -54,7 +54,6 @@ def get_in_size_of_deconv_layers(target_size, num_layers, ksize, stride):
 	# compute required deconv paddings
 	paddings = []
 	deconv_out_sizes = [target_size]
-	deconv_out_sizes.append(get_conv_outsize(deconv_out_sizes[-1], ksize, stride, get_conv_padding(deconv_out_sizes[-1], ksize, stride)))
-	deconv_out_sizes.append(get_conv_outsize(deconv_out_sizes[-1], ksize, stride, get_conv_padding(deconv_out_sizes[-1], ksize, stride)))
-	deconv_out_sizes.append(get_conv_outsize(deconv_out_sizes[-1], ksize, stride, get_conv_padding(deconv_out_sizes[-1], ksize, stride)))
+	for i in xrange(num_layers):
+		deconv_out_sizes.append(get_conv_outsize(deconv_out_sizes[-1], ksize, stride, get_conv_padding(deconv_out_sizes[-1], ksize, stride)))
 	return deconv_out_sizes[-1]

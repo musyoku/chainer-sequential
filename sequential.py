@@ -2,20 +2,22 @@ import copy, json, types
 import chainer
 import layers
 import functions
+from chain import get_weight_initializer
 
 class Sequential(object):
-	def __init__(self, weight_initializer="Normal", weight_init_std=1):
-		self._layers = []
+	def __init__(self, weight_initializer=None, weight_init_std=None):
+		self.layers = []
 		self.links = []
+		self.built = False
 
 		self.weight_initializer = weight_initializer	# Normal / GlorotNormal / HeNormal
 		self.weight_init_std = weight_init_std
 
 	def add(self, layer):
 		if isinstance(layer, layers.Layer) or isinstance(layer, functions.Function):
-			self._layers.append(layer)
+			self.layers.append(layer)
 		elif isinstance(layer, functions.Activation):
-			self._layers.append(layer.to_function())
+			self.layers.append(layer.to_function())
 		else:
 			raise Exception()
 
@@ -40,51 +42,51 @@ class Sequential(object):
 			del args[key]
 		return args
 
-	def get_weight_initializer(self):
-		if self.weight_initializer.lower() == "normal":
-			return chainer.initializers.Normal(self.weight_init_std)
-		if self.weight_initializer.lower() == "glorotnormal":
-			return chainer.initializers.GlorotNormal(self.weight_init_std)
-		if self.weight_initializer.lower() == "henormal":
-			return chainer.initializers.HeNormal(self.weight_init_std)
-		raise Exception()
-
 	def layer_to_chainer_link(self, layer):
 		if hasattr(layer, "_layer"):
 			if isinstance(layer, layers.GRU):
-				layer._init = self.get_weight_initializer()
-				layer._inner_init = self.get_weight_initializer()
+				layer._init = get_weight_initializer(self.weight_initializer, self.weight_init_std)
+				layer._inner_init = get_weight_initializer(self.weight_initializer, self.weight_init_std)
 			elif isinstance(layer, layers.LSTM):
-				layer._lateral_init  = self.get_weight_initializer()
-				layer._upward_init  = self.get_weight_initializer()
-				layer._bias_init = self.get_weight_initializer()
-				layer._forget_bias_init = self.get_weight_initializer()
+				layer._lateral_init  = get_weight_initializer(self.weight_initializer, self.weight_init_std)
+				layer._upward_init  = get_weight_initializer(self.weight_initializer, self.weight_init_std)
+				layer._bias_init = get_weight_initializer(self.weight_initializer, self.weight_init_std)
+				layer._forget_bias_init = get_weight_initializer(self.weight_initializer, self.weight_init_std)
 			elif isinstance(layer, layers.StatelessLSTM):
-				layer._lateral_init  = self.get_weight_initializer()
-				layer._upward_init  = self.get_weight_initializer()
+				layer._lateral_init  = get_weight_initializer(self.weight_initializer, self.weight_init_std)
+				layer._upward_init  = get_weight_initializer(self.weight_initializer, self.weight_init_std)
 			elif isinstance(layer, layers.StatefulGRU):
-				layer._init = self.get_weight_initializer()
-				layer._inner_init = self.get_weight_initializer()
+				layer._init = get_weight_initializer(self.weight_initializer, self.weight_init_std)
+				layer._inner_init = get_weight_initializer(self.weight_initializer, self.weight_init_std)
 			elif isinstance(layer, layers.Gaussian):
-				layer._initialW_mean = self.get_weight_initializer()
-				layer._initialW_ln_var = self.get_weight_initializer()
+				layer._initialW_mean = get_weight_initializer(self.weight_initializer, self.weight_init_std)
+				layer._initialW_ln_var = get_weight_initializer(self.weight_initializer, self.weight_init_std)
 			elif isinstance(layer, layers.Merge):
 				for i in xrange(layer.num_inputs):
-					setattr(layer, "_initialW_%d" % i, self.get_weight_initializer())
+					setattr(layer, "_initialW_%d" % i, get_weight_initializer(self.weight_initializer, self.weight_init_std))
 			else:
-				layer._initialW = self.get_weight_initializer()
+				layer._initialW = get_weight_initializer(self.weight_initializer, self.weight_init_std)
 			return layer.to_link()
 		if hasattr(layer, "_function"):
 			return layer
 		raise Exception()
 
-	def build(self):
-		json = self.to_json()
-		self.from_json(json)
+	def build(self, new_weight_initializer=None, new_weight_init_std=None):
+		self.links = []
+		# overwrite initializer if needed
+		if new_weight_initializer is not None:
+			self.weight_initializer = new_weight_initializer
+		if new_weight_init_std is not None:
+			self.weight_init_std = new_weight_init_std
+		# convert layers to Chainer Link objects
+		for i, layer in enumerate(self.layers):
+			link = self.layer_to_chainer_link(layer)
+			self.links.append(link)
+		self.built = True
 
 	def to_dict(self):
 		layers = []
-		for layer in self._layers:
+		for layer in self.layers:
 			config = layer.to_dict()
 			dic = {}
 			for key, value in config.iteritems():
@@ -103,19 +105,18 @@ class Sequential(object):
 
 	def from_json(self, str):
 		self.links = []
-		self._layers = []
+		self.layers = []
 		attributes = {}
 		dict_array = json.loads(str)
 		self.from_dict(dict_array)
 
 	def from_dict(self, dict):
-		self.weight_initializer = dict["weight_initializer"]
-		self.weight_init_std = dict["weight_init_std"]
+		weight_initializer = dict["weight_initializer"]
+		weight_init_std = dict["weight_init_std"]
 		for i, layer_dict in enumerate(dict["layers"]):
 			layer = self.layer_from_dict(layer_dict)
-			link = self.layer_to_chainer_link(layer)
-			self.links.append(link)
-			self._layers.append(layer)
+			self.layers.append(layer)
+		self.build(weight_initializer, weight_init_std)
 
 	def __call__(self, *args, **kwargs):
 		x = None

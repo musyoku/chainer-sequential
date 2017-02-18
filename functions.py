@@ -176,17 +176,6 @@ class average_pooling_2d(Function):
 	def __call__(self, x):
 		return F.average_pooling_2d(x, self.ksize, self.stride, self.pad, self.use_cudnn)
 
-class average_pooling_2d(Function):
-	def __init__(self, ksize, stride=None, pad=0, use_cudnn=True):
-		self._function = "average_pooling_2d"
-		self.ksize = ksize
-		self.stride = stride
-		self.pad = pad
-		self.use_cudnn = use_cudnn
-
-	def __call__(self, x):
-		return F.average_pooling_2d(x, self.ksize, self.stride, self.pad, self.use_cudnn)
-
 class max_pooling_2d(Function):
 	def __init__(self, ksize, stride=None, pad=0, cover_all=True, use_cudnn=True):
 		self._function = "max_pooling_2d"
