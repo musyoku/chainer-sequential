@@ -119,6 +119,8 @@ class Chain(chainer.Chain):
 			elif isinstance(link, links.Merge):
 				for l, layer in enumerate(link.merge_layers):
 					self.add_link("{}_{}_{}".format(name, i, l), layer)
+			elif isinstance(link, sequential.Residual):
+				self.add_sequence_with_name(link, name="residual_%d" % i)
 
 	def load(self, filename):
 		if os.path.isfile(filename):

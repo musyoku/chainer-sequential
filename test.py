@@ -37,6 +37,35 @@ for link in seq.links:
 			if isinstance(_link, L.Linear):
 				print np.std(_link.W.data), np.mean(_link.W.data)
 
+# residual test 2
+seq = Sequential()
+seq.add(layers.Linear(28*28, 500))
+seq.add(layers.BatchNormalization(500))
+seq.add(functions.Activation("relu"))
+if True:
+	res1 = Residual()
+	res1.add(layers.Linear(500, 1000))
+	res1.add(layers.BatchNormalization(1000))
+	res1.add(functions.Activation("relu"))
+	if True:
+		res2 = Residual()
+		res2.add(layers.Linear(1000, 1000))
+		res2.add(layers.BatchNormalization(1000))
+		res2.add(functions.Activation("relu"))
+		res1.add(res2)
+	res1.add(layers.Linear(1000, 500))
+	res1.add(layers.BatchNormalization(500))
+	res1.add(functions.Activation("relu"))
+	seq.add(res1)
+json_str = seq.to_json()
+seq = Sequential()
+seq.from_json(json_str)
+seq.build("Normal", 1)
+
+x = np.random.normal(scale=1, size=(2, 28*28)).astype(np.float32)
+x = Variable(x)
+y = seq(x)
+print y.data.shape
 
 
 # JSON test
