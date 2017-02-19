@@ -33,7 +33,13 @@ class Sequential(object):
 				args = self.dict_to_layer_init_args(dictionary)
 				return getattr(functions, dictionary["_function"])(**args)
 		if "_residual" in dictionary:
-			seq = Sequential()
+			weight_initializer = self.weight_initializer
+			weight_std = self.weight_std
+			if dictionary["weight_initializer"] is not None:
+				weight_initializer = dictionary["weight_initializer"]
+			if dictionary["weight_std"] is not None:
+				weight_std = dictionary["weight_std"]
+			seq = Residual(weight_initializer=weight_initializer, weight_std=weight_std)
 			seq.from_dict(dictionary)
 			return seq
 		raise Exception()
@@ -77,28 +83,40 @@ class Sequential(object):
 			return layer
 		raise Exception()
 
-	def build(self, new_weight_initializer=None, new_weight_init_std=None):
+	def build(self, new_weight_initializer=None, new_weight_std=None):
 		self.links = []
 		# overwrite initializer if needed
 		if new_weight_initializer is not None:
 			self.weight_initializer = new_weight_initializer
-		if new_weight_init_std is not None:
-			self.weight_std = new_weight_init_std
+		if new_weight_std is not None:
+			self.weight_std = new_weight_std
 		# convert layers to Chainer Link objects
 		for i, layer in enumerate(self.layers):
-			link = self.layer_to_chainer_link(layer)
-			self.links.append(link)
+			if isinstance(layer, Residual):
+				weight_initializer = self.weight_initializer
+				weight_std = self.weight_std
+				if layer.weight_initializer is not None:
+					weight_initializer = layer.weight_initializer
+				if layer.weight_std is not None:
+					weight_std = layer.weight_std
+				layer.build(new_weight_initializer=weight_initializer, new_weight_std=weight_std)
+				self.links.append(layer)
+			else:
+				link = self.layer_to_chainer_link(layer)
+				self.links.append(link)
 		self.built = True
 
 	def to_dict(self):
 		layers = []
 		for layer in self.layers:
 			config = layer.to_dict()
-			dic = {}
+			dictionary = {}
+			if isinstance(layer, Residual):
+				dictionary["_residual"] = True
 			for key, value in config.iteritems():
-				if isinstance(value, (int, float, str, bool, type(None), tuple, list, dictionary)):
-					dic[key] = value
-			layers.append(dic)
+				if isinstance(value, (int, float, str, bool, type(None), tuple, list, dict)):
+					dictionary[key] = value
+			layers.append(dictionary)
 		return {
 			"layers": layers,
 			"weight_initializer": self.weight_initializer,
@@ -136,6 +154,9 @@ class Sequential(object):
 				x = link(args[0] if x is None else x, test=kwargs["test"])
 			elif isinstance(link, functions.gaussian_noise):
 				x = link(args[0] if x is None else x, test=kwargs["test"])
+			elif isinstance(link, Residual):
+				y = link(args[0] if x is None else x, test=kwargs["test"])
+				x = y + x
 			else:
 				if x is None:
 					x = link(*args)

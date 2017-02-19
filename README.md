@@ -115,6 +115,26 @@ y = ...
 output = model(x, y)
 ```
 
+## Residual connections
+
+```
+seq = Sequential()
+seq.add(layers.Linear(28*28, 500))
+seq.add(layers.BatchNormalization(500))
+seq.add(functions.Activation("relu"))
+res = Residual()
+res.add(layers.Linear(500, 500))
+res.add(layers.BatchNormalization(500))
+res.add(functions.Activation("relu"))
+seq.add(res)
+seq.build("Normal", 1)
+
+x = Variable(np.random.normal(scale=1, size=(2, 28*28)).astype(np.float32))
+y = seq(x)
+```
+
+y = res(seq(x)) + seq(x)
+
 ## DCGAN
 
 ```

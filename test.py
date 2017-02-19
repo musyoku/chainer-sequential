@@ -1,6 +1,7 @@
 import numpy as np
 from chainer import Variable
 from chainer import functions as F
+from chainer import links as L
 from sequential import Sequential, Residual
 import layers
 import functions
@@ -9,21 +10,33 @@ from chain import Chain
 
 
 # residual test
-seq = Sequential()
-seq.add(layers.Linear(28*28, 500, use_weightnorm=True))
+seq = Sequential(weight_std=0.001)
+seq.add(layers.Linear(28*28, 500))
 seq.add(layers.BatchNormalization(500))
 seq.add(functions.Activation("relu"))
-res = Residual()
-res.add(layers.Linear(28*28, 500, use_weightnorm=True))
+res = Residual(weight_std=100)
+res.add(layers.Linear(500, 500))
 res.add(layers.BatchNormalization(500))
 res.add(functions.Activation("relu"))
 seq.add(res)
+json_str = seq.to_json()
+seq = Sequential()
+seq.from_json(json_str)
 seq.build("Normal", 1)
 
 x = np.random.normal(scale=1, size=(2, 28*28)).astype(np.float32)
 x = Variable(x)
 y = seq(x)
 print y.data.shape
+# check
+for link in seq.links:
+	if isinstance(link, L.Linear):
+		print np.std(link.W.data), np.mean(link.W.data)
+	if isinstance(link, Residual):
+		for _link in link.links:
+			if isinstance(_link, L.Linear):
+				print np.std(_link.W.data), np.mean(_link.W.data)
+
 
 
 # JSON test
