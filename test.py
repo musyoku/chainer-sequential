@@ -176,24 +176,47 @@ x = np.random.normal(scale=1, size=(128, 28*28)).astype(np.float32)
 x = Variable(x)
 
 seq = Sequential()
-seq.add(layers.Linear(28*28, 500, use_weightnorm=True))
+seq.add(layers.Linear(28*28, 500))
 seq.add(layers.BatchNormalization(500))
 seq.add(functions.Activation("relu"))
-seq.add(layers.Linear(None, 500, use_weightnorm=False))
+res = Residual()
+res.add(layers.Linear(500, 500))
+res.add(layers.BatchNormalization(500))
+res.add(functions.Activation("relu"))
+seq.add(res)
+seq.add(layers.Linear(500, 500))
 seq.add(layers.BatchNormalization(500))
 seq.add(functions.Activation("relu"))
-seq.add(layers.Linear(500, 28*28, use_weightnorm=True))
+seq.add(layers.Linear(500, 28*28))
 
-chain = Chain("GlorotNormal", 0.01)
+chain = Chain("GlorotNormal", 10)
 chain.add_sequence(seq)
-chain.setup_optimizers("adam", 0.001, momentum=0.9, weight_decay=0.000001, gradient_clipping=10)
+chain.setup_optimizers("adam", 0.01, momentum=0.9, weight_decay=0.000001, gradient_clipping=10)
 
-for i in xrange(100):
+# check
+for link in seq.links:
+	if isinstance(link, L.Linear):
+		print np.std(link.W.data), np.mean(link.W.data)
+	if isinstance(link, Residual):
+		for _link in link.links:
+			if isinstance(_link, L.Linear):
+				print np.std(_link.W.data), np.mean(_link.W.data)
+
+for i in xrange(1000):
 	y = chain(x)
 	loss = F.mean_squared_error(x, y)
 	chain.backprop(loss)
-	print float(loss.data)
+	if i % 100 == 0:
+		print float(loss.data)
 
+# check
+for link in seq.links:
+	if isinstance(link, L.Linear):
+		print np.std(link.W.data), np.mean(link.W.data)
+	if isinstance(link, Residual):
+		for _link in link.links:
+			if isinstance(_link, L.Linear):
+				print np.std(_link.W.data), np.mean(_link.W.data)
 chain.save("model")
 
 # weight test
