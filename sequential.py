@@ -18,22 +18,28 @@ class Sequential(object):
 			self.layers.append(layer)
 		elif isinstance(layer, functions.Activation):
 			self.layers.append(layer.to_function())
+		elif isinstance(layer, Residual):
+			self.layers.append(layer)
 		else:
 			raise Exception()
 
-	def layer_from_dict(self, dict):
-		if "_layer" in dict:
-			if hasattr(layers, dict["_layer"]):
-				args = self.dict_to_layer_init_args(dict)
-				return getattr(layers, dict["_layer"])(**args)
-		if "_function" in dict:
-			if hasattr(functions, dict["_function"]):
-				args = self.dict_to_layer_init_args(dict)
-				return getattr(functions, dict["_function"])(**args)
+	def layer_from_dict(self, dictionary):
+		if "_layer" in dictionary:
+			if hasattr(layers, dictionary["_layer"]):
+				args = self.dict_to_layer_init_args(dictionary)
+				return getattr(layers, dictionary["_layer"])(**args)
+		if "_function" in dictionary:
+			if hasattr(functions, dictionary["_function"]):
+				args = self.dict_to_layer_init_args(dictionary)
+				return getattr(functions, dictionary["_function"])(**args)
+		if "_residual" in dictionary:
+			seq = Sequential()
+			seq.from_dict(dictionary)
+			return seq
 		raise Exception()
 
-	def dict_to_layer_init_args(self, dict):
-		args = copy.deepcopy(dict)
+	def dict_to_layer_init_args(self, dictionary):
+		args = copy.deepcopy(dictionary)
 		remove_keys = []
 		for key, value in args.iteritems():
 			if key[0] == "_":
@@ -90,7 +96,7 @@ class Sequential(object):
 			config = layer.to_dict()
 			dic = {}
 			for key, value in config.iteritems():
-				if isinstance(value, (int, float, str, bool, type(None), tuple, list, dict)):
+				if isinstance(value, (int, float, str, bool, type(None), tuple, list, dictionary)):
 					dic[key] = value
 			layers.append(dic)
 		return {
@@ -110,10 +116,10 @@ class Sequential(object):
 		dict_array = json.loads(str)
 		self.from_dict(dict_array)
 
-	def from_dict(self, dict):
-		weight_initializer = dict["weight_initializer"]
-		weight_std = dict["weight_std"]
-		for i, layer_dict in enumerate(dict["layers"]):
+	def from_dict(self, dictionary):
+		weight_initializer = dictionary["weight_initializer"]
+		weight_std = dictionary["weight_std"]
+		for i, layer_dict in enumerate(dictionary["layers"]):
 			layer = self.layer_from_dict(layer_dict)
 			self.layers.append(layer)
 
@@ -140,3 +146,8 @@ class Sequential(object):
 		if "return_activations" in kwargs and kwargs["return_activations"] == True:
 			return x, activations
 		return x
+
+class Residual(Sequential):
+	def __init__(self, weight_initializer=None, weight_std=None):
+		super(Residual, self).__init__(weight_initializer=weight_initializer, weight_std=weight_std)
+		self._residual = True

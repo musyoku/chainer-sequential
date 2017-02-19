@@ -1,11 +1,30 @@
 import numpy as np
 from chainer import Variable
 from chainer import functions as F
-from sequential import Sequential
+from sequential import Sequential, Residual
 import layers
 import functions
 import util
 from chain import Chain
+
+
+# residual test
+seq = Sequential()
+seq.add(layers.Linear(28*28, 500, use_weightnorm=True))
+seq.add(layers.BatchNormalization(500))
+seq.add(functions.Activation("relu"))
+res = Residual()
+res.add(layers.Linear(28*28, 500, use_weightnorm=True))
+res.add(layers.BatchNormalization(500))
+res.add(functions.Activation("relu"))
+seq.add(res)
+seq.build("Normal", 1)
+
+x = np.random.normal(scale=1, size=(2, 28*28)).astype(np.float32)
+x = Variable(x)
+y = seq(x)
+print y.data.shape
+
 
 # JSON test
 seq1 = Sequential()
