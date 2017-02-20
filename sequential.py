@@ -156,6 +156,7 @@ class Sequential(object):
 				x = link(args[0] if x is None else x, test=kwargs["test"])
 			elif isinstance(link, Residual):
 				y = link(args[0] if x is None else x, test=kwargs["test"])
+				x = args[0] if x is None else x
 				x = y + x
 			else:
 				if x is None:

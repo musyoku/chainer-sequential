@@ -8,7 +8,6 @@ import functions
 import util
 from chain import Chain
 
-
 # residual test
 seq = Sequential(weight_std=0.001)
 seq.add(layers.Linear(28*28, 500))
