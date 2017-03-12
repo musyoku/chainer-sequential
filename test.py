@@ -8,6 +8,32 @@ import functions
 import util
 from chain import Chain
 
+# PixelShuffler test
+x = np.random.normal(scale=1, size=(2, 100)).astype(np.float32)
+x = Variable(x)
+
+image_size = 96
+input_size = 2
+
+seq = Sequential()
+seq.add(layers.Linear(100, 64 * input_size ** 2))
+seq.add(layers.BatchNormalization(64 * input_size ** 2))
+seq.add(functions.Activation("relu"))
+seq.add(functions.reshape((-1, 64, input_size, input_size)))
+seq.add(layers.PixelShuffler2D(64, 32, r=2))
+seq.add(layers.BatchNormalization(32))
+seq.add(functions.Activation("relu"))
+seq.add(layers.PixelShuffler2D(32, 16, r=2))
+seq.add(layers.BatchNormalization(16))
+seq.add(functions.Activation("relu"))
+seq.add(layers.PixelShuffler2D(16, 3, r=2))
+json_str = seq.to_json()
+seq.from_json(json_str)
+seq.build("HeNormal", 0.1)
+
+y = seq(x)
+print y.data.shape
+
 # residual test
 seq = Sequential(weight_std=0.001)
 seq.add(layers.Linear(28*28, 500))

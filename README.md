@@ -135,6 +135,24 @@ y = seq(x)
 
 y = res(seq(x)) + seq(x)
 
+## PixelShuffler Layer
+
+```
+input_size = 2
+seq = Sequential()
+seq.add(layers.Linear(100, 64 * input_size ** 2))
+seq.add(layers.BatchNormalization(64 * input_size ** 2))
+seq.add(functions.Activation("relu"))
+seq.add(functions.reshape((-1, 64, input_size, input_size)))
+seq.add(layers.PixelShuffler2D(64, 32, r=2))
+seq.add(layers.BatchNormalization(32))
+seq.add(functions.Activation("relu"))
+seq.add(layers.PixelShuffler2D(32, 16, r=2))
+seq.add(layers.BatchNormalization(16))
+seq.add(functions.Activation("relu"))
+seq.add(layers.PixelShuffler2D(16, 3, r=2))
+```
+
 ## DCGAN
 
 ```
